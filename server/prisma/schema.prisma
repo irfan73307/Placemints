@@ -1,0 +1,162 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                   String         @id @default(uuid())
+  name                 String?
+  fullName             String?
+  email                String         @unique
+  googleId             String?        @unique
+  passwordHash         String?
+  avatar               String?
+  avatarUrl            String?
+  department           String?
+  degree               String?        @default("B.Tech")
+  graduationYear       Int?           @default(2026)
+  section              String?
+  rollNumber           String?
+  rollNo               String?
+  branch               String?        @default("CSE")
+  batchYear            Int?           @default(2026)
+  cgpa                 String?        @default("8.50")
+  placementGoal        String?        @default("Software Engineer (SDE-1)")
+  targetRole           String?        @default("Software Engineer")
+  interestedRoles      String?        // Comma-separated or JSON
+  programmingLanguages String?        // Comma-separated or JSON
+  frameworks           String?        // Comma-separated or JSON
+  technologies         String?        // Comma-separated or JSON
+  github               String?
+  linkedin             String?
+  leetcode             String?
+  codeforces           String?
+  codechef             String?
+  resume               String?
+  bio                  String?
+  profileCompleted     Boolean        @default(false)
+  role                 String         @default("student")
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @default(now()) @updatedAt
+
+  questions            Question[]
+  likes                QuestionLike[]
+  resources            Resource[]
+  reviews              Review[]
+  savedCompanies       SavedCompany[]
+  refreshTokens        RefreshToken[]
+}
+
+model Company {
+  id            String         @id @default(uuid())
+  slug          String         @unique
+  name          String
+  logoUrl       String
+  tier          String?
+  ctc           String?
+  avgCtc        Float?         @default(0.0)
+  description   String
+  sector        String?        @default("IT")
+  tags          String         // Comma-separated tags
+  createdAt     DateTime       @default(now())
+
+  rounds        InterviewRound[]
+  questions     Question[]
+  stats         PlacementStat[]
+  reviews       Review[]
+  savedBy       SavedCompany[]
+}
+
+model InterviewRound {
+  id          String     @id @default(uuid())
+  companyId   String
+  company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  roundNumber Int
+  title       String
+  description String
+  questions   Question[]
+}
+
+model Question {
+  id            String          @id @default(uuid())
+  companyId     String
+  company       Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  roundId       String?
+  round         InterviewRound? @relation(fields: [roundId], references: [id], onDelete: SetNull)
+  questionText  String
+  topicTags     String          // Comma-separated tags
+  difficulty    String          @default("Medium")
+  year          Int             @default(2024)
+  likeCount     Int             @default(0)
+  contributedBy String?
+  contributor   User?           @relation(fields: [contributedBy], references: [id], onDelete: SetNull)
+  createdAt     DateTime        @default(now())
+
+  likes         QuestionLike[]
+}
+
+model QuestionLike {
+  userId     String
+  questionId String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@id([userId, questionId])
+}
+
+model PlacementStat {
+  id                 String   @id @default(uuid())
+  companyId          String
+  company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  year               Int
+  studentsPlaced     Int
+  avgCtc             Float
+  maxCtc             Float
+  eligibilityCriteria String?
+}
+
+model Resource {
+  id          String   @id @default(uuid())
+  title       String
+  type        String   @default("PDF Guide")
+  url         String
+  tags        String   // Comma-separated
+  uploadedBy  String?
+  uploader    User?    @relation(fields: [uploadedBy], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+}
+
+model SavedCompany {
+  userId    String
+  companyId String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, companyId])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+}
