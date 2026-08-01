@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -7,13 +7,23 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// -----------------------------------------------------------------------------
+// CORE AUTHENTICATION & USER MANAGEMENT
+// -----------------------------------------------------------------------------
+
 model User {
-  id                   String         @id @default(uuid())
+  id           String    @id @default(uuid())
+  email        String    @unique
+  googleId     String?   @unique
+  passwordHash String?
+  role         String    @default("student") // "student" | "admin"
+  lastLoginAt  DateTime? @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
+
+  // Convenience flat fields for legacy compatibility
   name                 String?
   fullName             String?
-  email                String         @unique
-  googleId             String?        @unique
-  passwordHash         String?
   avatar               String?
   avatarUrl            String?
   department           String?
@@ -27,10 +37,10 @@ model User {
   cgpa                 String?        @default("8.50")
   placementGoal        String?        @default("Software Engineer (SDE-1)")
   targetRole           String?        @default("Software Engineer")
-  interestedRoles      String?        // Comma-separated or JSON
-  programmingLanguages String?        // Comma-separated or JSON
-  frameworks           String?        // Comma-separated or JSON
-  technologies         String?        // Comma-separated or JSON
+  interestedRoles      String?
+  programmingLanguages String?
+  frameworks           String?
+  technologies         String?
   github               String?
   linkedin             String?
   leetcode             String?
@@ -39,36 +49,169 @@ model User {
   resume               String?
   bio                  String?
   profileCompleted     Boolean        @default(false)
-  role                 String         @default("student")
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @default(now()) @updatedAt
 
-  questions            Question[]
-  likes                QuestionLike[]
-  resources            Resource[]
-  reviews              Review[]
-  savedCompanies       SavedCompany[]
-  refreshTokens        RefreshToken[]
+  // Explicit Relations
+  studentProfile  StudentProfile?
+  notifications   Notification[]
+  activityHistory ActivityHistory[]
+  questions       Question[]
+  likes           QuestionLike[]
+  resources       Resource[]
+  reviews         Review[]
+  savedCompanies  SavedCompany[]
+  refreshTokens   RefreshToken[]
+
+  @@index([email])
+  @@index([role])
 }
 
-model Company {
-  id            String         @id @default(uuid())
-  slug          String         @unique
-  name          String
-  logoUrl       String
-  tier          String?
-  ctc           String?
-  avgCtc        Float?         @default(0.0)
-  description   String
-  sector        String?        @default("IT")
-  tags          String         // Comma-separated tags
-  createdAt     DateTime       @default(now())
+// -----------------------------------------------------------------------------
+// STUDENT PROFILES & ENTITIES
+// -----------------------------------------------------------------------------
 
-  rounds        InterviewRound[]
-  questions     Question[]
-  stats         PlacementStat[]
-  reviews       Review[]
-  savedBy       SavedCompany[]
+model StudentProfile {
+  id                   String   @id @default(uuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName             String
+  email                String
+  avatar               String?
+  department           String   @default("CSE") // "CSE" | "ECE" | "EEE" | "IT" | "MECH" | "CIVIL" | "AIDS"
+  degree               String   @default("B.Tech")
+  graduationYear       Int      @default(2026)
+  section              String?  @default("A")
+  rollNumber           String?  @unique
+  cgpa                 String   @default("8.50")
+  placementGoal        String   @default("Software Engineer (SDE-1)")
+  interestedRoles      String?  // Comma-separated or JSON
+  programmingLanguages String?  // Comma-separated or JSON
+  frameworks           String?  // Comma-separated or JSON
+  technologies         String?  // Comma-separated or JSON
+  bio                  String?
+  profileCompleted     Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @default(now()) @updatedAt
+
+  codingProfile        CodingProfile?
+  resumes              Resume[]
+  savedCompanies       SavedCompany[]
+  companyProgress      CompanyProgress[]
+  interviewExperiences InterviewExperience[]
+
+  @@index([email])
+  @@index([rollNumber])
+  @@index([department])
+  @@index([graduationYear])
+  @@index([cgpa])
+}
+
+model CodingProfile {
+  id               String         @id @default(uuid())
+  studentProfileId String         @unique
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  github           String?
+  linkedin         String?
+  leetcode         String?
+  codeforces       String?
+  codechef         String?
+  leetcodeSolved   Int?           @default(0)
+  codeforcesRating Int?           @default(0)
+  updatedAt        DateTime       @default(now()) @updatedAt
+}
+
+model Resume {
+  id               String         @id @default(uuid())
+  studentProfileId String
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  fileName         String
+  fileUrl          String
+  isDefault        Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+}
+
+model SavedCompany {
+  userId           String
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId        String
+  company          Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  studentProfileId String?
+  studentProfile   StudentProfile? @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  createdAt        DateTime        @default(now())
+
+  @@id([userId, companyId])
+}
+
+model CompanyProgress {
+  id               String         @id @default(uuid())
+  studentProfileId String
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  companyId        String
+  company          Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  status           String         @default("BOOKMARKED") // "BOOKMARKED" | "APPLIED" | "OA_CLEARED" | "INTERVIEW" | "OFFERED" | "REJECTED"
+  notes            String?
+  targetDate       DateTime?
+  updatedAt        DateTime       @default(now()) @updatedAt
+
+  @@unique([studentProfileId, companyId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("info") // "info" | "success" | "warning"
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model ActivityHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  metadata  String?
+  createdAt DateTime @default(now())
+}
+
+model InterviewExperience {
+  id               String         @id @default(uuid())
+  studentProfileId String
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  companyId        String
+  company          Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  role             String
+  verdict          String         @default("OFFERED") // "OFFERED" | "REJECTED"
+  content          String
+  rating           Int            @default(5)
+  createdAt        DateTime       @default(now())
+}
+
+// -----------------------------------------------------------------------------
+// COMPANY & RECRUITMENT ARCHIVES
+// -----------------------------------------------------------------------------
+
+model Company {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  name        String
+  logoUrl     String
+  tier        String?
+  ctc         String?
+  avgCtc      Float?   @default(0.0)
+  description String
+  sector      String?  @default("IT")
+  tags        String   // Comma-separated tags
+  createdAt   DateTime @default(now())
+
+  rounds              InterviewRound[]
+  questions           Question[]
+  stats               PlacementStat[]
+  reviews             Review[]
+  savedBy             SavedCompany[]
+  progressRecords     CompanyProgress[]
+  interviewExperiences InterviewExperience[]
 }
 
 model InterviewRound {
@@ -96,7 +239,7 @@ model Question {
   contributor   User?           @relation(fields: [contributedBy], references: [id], onDelete: SetNull)
   createdAt     DateTime        @default(now())
 
-  likes         QuestionLike[]
+  likes QuestionLike[]
 }
 
 model QuestionLike {
@@ -110,25 +253,25 @@ model QuestionLike {
 }
 
 model PlacementStat {
-  id                 String   @id @default(uuid())
-  companyId          String
-  company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  year               Int
-  studentsPlaced     Int
-  avgCtc             Float
-  maxCtc             Float
+  id                  String  @id @default(uuid())
+  companyId           String
+  company             Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  year                Int
+  studentsPlaced      Int
+  avgCtc              Float
+  maxCtc              Float
   eligibilityCriteria String?
 }
 
 model Resource {
-  id          String   @id @default(uuid())
-  title       String
-  type        String   @default("PDF Guide")
-  url         String
-  tags        String   // Comma-separated
-  uploadedBy  String?
-  uploader    User?    @relation(fields: [uploadedBy], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid())
+  title      String
+  type       String   @default("PDF Guide")
+  url        String
+  tags       String   // Comma-separated
+  uploadedBy String?
+  uploader   User?    @relation(fields: [uploadedBy], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
 }
 
 model Review {
@@ -140,16 +283,6 @@ model Review {
   rating    Int
   comment   String
   createdAt DateTime @default(now())
-}
-
-model SavedCompany {
-  userId    String
-  companyId String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-
-  @@id([userId, companyId])
 }
 
 model RefreshToken {

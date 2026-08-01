@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { LayoutDashboard, Building2, Bookmark, User, GraduationCap, Settings as SettingsIcon } from 'lucide-react';
+import { LayoutDashboard, Building2, Bookmark, User, GraduationCap, Settings as SettingsIcon, ShieldAlert } from 'lucide-react';
 import { ROUTES } from '../constants/routes';
 
 const navItems = [
@@ -15,6 +15,7 @@ const navItems = [
   { name: 'Companies', path: ROUTES.COMPANIES, icon: Building2 },
   { name: 'Library', path: ROUTES.LIBRARY, icon: Bookmark },
   { name: 'Profile', path: ROUTES.PROFILE, icon: User },
+  { name: 'Admin Directory', path: '/admin/students', icon: ShieldAlert },
   { name: 'Settings', path: ROUTES.SETTINGS, icon: SettingsIcon },
 ];
 

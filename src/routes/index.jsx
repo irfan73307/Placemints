@@ -27,6 +27,7 @@ import CompanyDetails from '../pages/CompanyDetails';
 import Library from '../pages/Library';
 import Profile from '../pages/Profile';
 import Settings from '../pages/Settings';
+import AdminStudents from '../pages/AdminStudents';
 import NotFound from '../pages/NotFound';
 
 export const router = createBrowserRouter([
@@ -89,6 +90,10 @@ export const router = createBrowserRouter([
           {
             path: ROUTES.SETTINGS,
             element: <Settings />,
+          },
+          {
+            path: '/admin/students',
+            element: <AdminStudents />,
           },
         ],
       },
