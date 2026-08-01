@@ -88,7 +88,7 @@ export function Register() {
       <form onSubmit={handleRegister} className="space-y-4">
         <Input
           label="Full Name *"
-          placeholder="e.g. Shaik Haroon"
+          placeholder="Enter Your Name"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           required
@@ -97,7 +97,7 @@ export function Register() {
         <Input
           label="SASTRA Email *"
           type="email"
-          placeholder="student@sastra.ac.in"
+          placeholder="127XXXXXX@sastra.ac.in"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required

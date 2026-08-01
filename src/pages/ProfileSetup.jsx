@@ -237,14 +237,14 @@ export function ProfileSetup() {
                 label="Full Name *"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="e.g. Shaik Haroon"
+                placeholder="Enter Your Name"
                 required
               />
               <Input
                 label="SASTRA Email"
                 value={user?.email || ''}
                 isDisabled
-                placeholder="student@sastra.ac.in"
+                placeholder="127XXXXXX@sastra.ac.in"
               />
             </div>
 

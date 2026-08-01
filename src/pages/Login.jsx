@@ -145,7 +145,7 @@ export function Login() {
         <Input
           label="SASTRA Email Address *"
           type="email"
-          placeholder="student@sastra.ac.in"
+          placeholder="127XXXXXX@sastra.ac.in"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
