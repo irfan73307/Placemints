@@ -38,36 +38,58 @@ const SUGGESTED_ROLES = [
   'DevOps Engineer',
 ];
 
+export function getGraduationYearFromEmailOrRoll(emailOrRoll) {
+  if (!emailOrRoll) return '';
+  const str = String(emailOrRoll).trim();
+  const roll = str.includes('@') ? str.split('@')[0] : str;
+  if (roll.length >= 3 && /^\d+$/.test(roll)) {
+    const yy = parseInt(roll.substring(1, 3), 10);
+    if (!isNaN(yy) && yy >= 0 && yy <= 99) {
+      return 2000 + yy;
+    }
+  }
+  return '';
+}
+
 export function ProfileSetup() {
   const { user, updateUserData } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
 
+  const defaultRollNumber = user?.rollNumber || user?.rollNo || (user?.email ? user.email.split('@')[0] : '');
+  const computedGraduationYear = user?.graduationYear || user?.batchYear || getGraduationYearFromEmailOrRoll(user?.email || defaultRollNumber);
+
   // Personal & Academic State
   const [fullName, setFullName] = useState(user?.name || user?.fullName || '');
   const [avatar, setAvatar] = useState(user?.avatar || user?.avatarUrl || '');
-  const [department, setDepartment] = useState(user?.department || user?.branch || 'Computer Science');
+  const [department, setDepartment] = useState(user?.department || user?.branch || '');
   const [degree, setDegree] = useState(user?.degree || 'B.Tech');
-  const [graduationYear, setGraduationYear] = useState(user?.graduationYear || user?.batchYear || 2026);
-  const [section, setSection] = useState(user?.section || 'A');
-  const [rollNumber, setRollNumber] = useState(user?.rollNumber || user?.rollNo || '');
-  const [cgpa, setCgpa] = useState(user?.cgpa || '8.50');
-  const [placementGoal, setPlacementGoal] = useState(user?.placementGoal || user?.targetRole || 'Software Engineer (SDE-1)');
+  const [graduationYear, setGraduationYear] = useState(computedGraduationYear);
+  const [section, setSection] = useState(user?.section || '');
+  const [rollNumber, setRollNumber] = useState(defaultRollNumber);
+  const [cgpa, setCgpa] = useState(user?.cgpa || '');
+  const [placementGoal, setPlacementGoal] = useState(user?.placementGoal || user?.targetRole || '');
 
   // Career & Skills State
   const [interestedRoles, setInterestedRoles] = useState(
-    user?.interestedRoles && user.interestedRoles.length > 0
+    user?.interestedRoles && Array.isArray(user.interestedRoles) && user.interestedRoles.length > 0
       ? user.interestedRoles
-      : ['Software Engineer', 'Full Stack Developer']
+      : []
   );
   const [programmingLanguages, setProgrammingLanguages] = useState(
-    user?.programmingLanguages ? user.programmingLanguages.join(', ') : 'C++, Java, Python, JavaScript'
+    user?.programmingLanguages
+      ? (Array.isArray(user.programmingLanguages) ? user.programmingLanguages.join(', ') : user.programmingLanguages)
+      : ''
   );
   const [frameworks, setFrameworks] = useState(
-    user?.frameworks ? user.frameworks.join(', ') : 'React, Node.js, Express, TailwindCSS'
+    user?.frameworks
+      ? (Array.isArray(user.frameworks) ? user.frameworks.join(', ') : user.frameworks)
+      : ''
   );
   const [technologies, setTechnologies] = useState(
-    user?.technologies ? user.technologies.join(', ') : 'Git, PostgreSQL, Docker, REST APIs'
+    user?.technologies
+      ? (Array.isArray(user.technologies) ? user.technologies.join(', ') : user.technologies)
+      : ''
   );
 
   // Coding Profiles State
@@ -93,6 +115,15 @@ export function ProfileSetup() {
   const handleRollChange = (val) => {
     const numericVal = val.replace(/\D/g, ''); // Numbers only
     setRollNumber(numericVal);
+
+    // Auto compute graduation year from 2nd and 3rd digit if available (e.g. 127015088 -> 2027)
+    if (numericVal.length >= 3) {
+      const yy = parseInt(numericVal.substring(1, 3), 10);
+      if (!isNaN(yy) && yy >= 0 && yy <= 99) {
+        setGraduationYear(2000 + yy);
+      }
+    }
+
     if (numericVal.length > 0 && numericVal.length !== 9) {
       setRollError('Roll Number must be exactly 9 digits (e.g. 127015088).');
     } else {
@@ -257,9 +288,10 @@ export function ProfileSetup() {
                 <select
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
-                  className="w-full p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors"
+                  className="w-full p-3 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors"
                   required
                 >
+                  <option value="" disabled>Select Department</option>
                   {SASTRA_DEPARTMENTS.map((dept) => (
                     <option key={dept} value={dept}>
                       {dept}

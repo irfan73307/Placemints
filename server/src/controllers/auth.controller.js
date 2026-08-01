@@ -101,8 +101,22 @@ async function googleCallback(req, res) {
       return res.redirect(`${clientUrl}/login?error=domain_restricted`);
     }
 
+function computeGraduationYearFromEmail(email) {
+  if (!email || typeof email !== 'string') return 2026;
+  const rollPart = email.trim().toLowerCase().split('@')[0];
+  if (rollPart.length >= 3 && /^\d+$/.test(rollPart)) {
+    const yy = parseInt(rollPart.substring(1, 3), 10);
+    if (!isNaN(yy) && yy >= 0 && yy <= 99) {
+      return 2000 + yy;
+    }
+  }
+  return 2026;
+}
+
     const isAdmin = email === '127015088@sastra.ac.in';
     const userRole = isAdmin ? 'ADMIN' : 'STUDENT';
+    const computedBatch = computeGraduationYearFromEmail(email);
+    const rollNo = email.split('@')[0];
 
     // 4. Upsert user in database with verified Google email
     let user = null;
@@ -118,11 +132,18 @@ async function googleCallback(req, res) {
             avatar: picture,
             avatarUrl: picture,
             googleId,
-            branch: 'CSE',
-            batchYear: 2026,
+            rollNo,
+            rollNumber: rollNo,
+            branch: '',
+            department: '',
+            batchYear: computedBatch,
+            graduationYear: computedBatch,
+            cgpa: '',
+            targetRole: '',
+            placementGoal: '',
             role: userRole,
             isPrimaryAdmin: isAdmin,
-            profileCompleted: true,
+            profileCompleted: false,
           },
         });
         console.log(`[OAuth 5/6] Created new database user record for: ${email} (ID: ${user.id})`);
@@ -148,11 +169,18 @@ async function googleCallback(req, res) {
         fullName: name,
         avatar: picture,
         avatarUrl: picture,
-        branch: 'CSE',
-        batchYear: 2026,
+        rollNo,
+        rollNumber: rollNo,
+        branch: '',
+        department: '',
+        batchYear: computedBatch,
+        graduationYear: computedBatch,
+        cgpa: '',
+        targetRole: '',
+        placementGoal: '',
         role: userRole,
         isPrimaryAdmin: isAdmin,
-        profileCompleted: true,
+        profileCompleted: false,
       };
     }
 
@@ -215,6 +243,7 @@ async function register(req, res) {
 
     const isAdmin = normalizedEmail === '127015088@sastra.ac.in';
     const passwordHash = await bcrypt.hash(password, 10);
+    const computedBatch = computeGraduationYearFromEmail(normalizedEmail);
 
     const user = await prisma.user.create({
       data: {
@@ -224,11 +253,18 @@ async function register(req, res) {
         passwordHash,
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(fullName)}`,
         avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(fullName)}`,
-        branch: 'CSE',
-        batchYear: 2026,
+        rollNo: rollPart,
+        rollNumber: rollPart,
+        branch: '',
+        department: '',
+        batchYear: computedBatch,
+        graduationYear: computedBatch,
+        cgpa: '',
+        targetRole: '',
+        placementGoal: '',
         role: isAdmin ? 'ADMIN' : 'STUDENT',
         isPrimaryAdmin: isAdmin,
-        profileCompleted: true,
+        profileCompleted: false,
       },
     });
 
