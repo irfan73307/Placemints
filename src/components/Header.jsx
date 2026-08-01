@@ -12,6 +12,7 @@ import { Avatar } from './Avatar';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getFormattedDepartment } from '../utils/departmentUtils';
+import { ROUTES } from '../constants/routes';
 
 export function Header() {
   const { user } = useAuth();
