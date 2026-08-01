@@ -64,6 +64,7 @@ async function getStudents(req, res) {
       graduationYear = 'All',
       placementGoal = 'All',
       profileCompleted = 'All',
+      cgpaRange = 'All',
       sortBy = 'name_asc',
       page = 1,
       limit = 50,
@@ -170,16 +171,32 @@ async function getStudents(req, res) {
       };
     });
 
+    let filteredList = formattedStudents;
+    if (cgpaRange && cgpaRange !== 'All') {
+      filteredList = formattedStudents.filter((st) => {
+        const val = parseFloat(st.cgpa);
+        if (isNaN(val)) return false;
+        if (cgpaRange === '9.0+') return val >= 9.0;
+        if (cgpaRange === '8.5+') return val >= 8.5;
+        if (cgpaRange === '8.0+') return val >= 8.0;
+        if (cgpaRange === '7.5+') return val >= 7.5;
+        if (cgpaRange === '7.0+') return val >= 7.0;
+        if (cgpaRange === '6.0+') return val >= 6.0;
+        if (cgpaRange === 'below_6.0') return val < 6.0;
+        return true;
+      });
+    }
+
     res.json({
-      data: formattedStudents,
+      data: filteredList,
       totalCount: grandTotalStudents,
-      filteredCount: totalStudents,
+      filteredCount: filteredList.length,
       pagination: {
-        total: totalStudents,
+        total: filteredList.length,
         grandTotal: grandTotalStudents,
         page: parseInt(page),
         limit: parseInt(limit),
-        totalPages: Math.ceil(totalStudents / parseInt(limit)),
+        totalPages: Math.ceil(filteredList.length / parseInt(limit)),
       },
     });
   } catch (err) {

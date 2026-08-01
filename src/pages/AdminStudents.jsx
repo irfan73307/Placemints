@@ -36,6 +36,7 @@ export default function AdminStudents() {
   const [graduationYear, setGraduationYear] = useState('All');
   const [placementGoal, setPlacementGoal] = useState('All');
   const [profileCompleted, setProfileCompleted] = useState('All');
+  const [cgpaRange, setCgpaRange] = useState('All');
   const [sortBy, setSortBy] = useState('name_asc');
   
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -56,6 +57,7 @@ export default function AdminStudents() {
           graduationYear,
           placementGoal,
           profileCompleted,
+          cgpaRange,
           sortBy,
         },
       });
@@ -76,7 +78,7 @@ export default function AdminStudents() {
 
   useEffect(() => {
     fetchStudents();
-  }, [searchQuery, department, graduationYear, placementGoal, profileCompleted, sortBy]);
+  }, [searchQuery, department, graduationYear, placementGoal, profileCompleted, cgpaRange, sortBy]);
 
   const handleStudentClick = async (student) => {
     setSelectedStudent(student);
@@ -183,9 +185,9 @@ export default function AdminStudents() {
 
       {/* Search & Filter Bar */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
           {/* Search */}
-          <div className="relative col-span-1 sm:col-span-2">
+          <div className="relative col-span-1 sm:col-span-2 lg:col-span-2">
             <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
             <input
               type="text"
@@ -225,6 +227,24 @@ export default function AdminStudents() {
               <option value="2025">2025</option>
               <option value="2026">2026</option>
               <option value="2027">2027</option>
+            </select>
+          </div>
+
+          {/* CGPA Range Filter */}
+          <div>
+            <select
+              value={cgpaRange}
+              onChange={(e) => setCgpaRange(e.target.value)}
+              className="w-full py-2.5 px-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium dark:text-white"
+            >
+              <option value="All">All CGPA</option>
+              <option value="9.0+">9.0+ CGPA (Super High)</option>
+              <option value="8.5+">8.5+ CGPA</option>
+              <option value="8.0+">8.0+ CGPA (Dream Cutoff)</option>
+              <option value="7.5+">7.5+ CGPA</option>
+              <option value="7.0+">7.0+ CGPA</option>
+              <option value="6.0+">6.0+ CGPA (Mass Recruiters)</option>
+              <option value="below_6.0">Below 6.0 CGPA</option>
             </select>
           </div>
 
