@@ -20,6 +20,7 @@ import { useLibrary } from '../contexts/LibraryContext';
 import { getCompanies } from '../services/companyService';
 import { calculateProfileCompletion } from '../utils/profileCompletion';
 import { getFormattedDepartment } from '../utils/departmentUtils';
+import { ROUTES } from '../constants/routes';
 import { 
   Sparkles, 
   Target, 
