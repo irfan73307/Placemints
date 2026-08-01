@@ -15,13 +15,13 @@ import BottomNav from '../components/BottomNav';
 
 export function AppLayout() {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col lg:flex-row antialiased text-slate-900 dark:text-slate-100 overflow-x-hidden transition-colors">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col lg:flex-row antialiased text-slate-900 dark:text-slate-100 transition-colors">
       {/* Desktop Sidebar (Persistent >= 1024px) */}
       <Sidebar />
 
       {/* Main Content Area Container */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen lg:pl-64">
-        {/* Top Header */}
+        {/* Top Header (Sticky across all pages) */}
         <Header />
 
         {/* Dynamic Page Content Outlet */}
