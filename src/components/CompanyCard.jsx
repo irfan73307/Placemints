@@ -43,7 +43,7 @@ export function CompanyCard({ company, onToggleSave, className }) {
   return (
     <div
       className={cn(
-        'group bg-white rounded-2xl border border-slate-200 p-5 shadow-card hover:shadow-card-hover hover:border-brand-300 hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between relative font-sans',
+        'group bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-card hover:shadow-card-hover hover:border-brand-300 dark:hover:border-brand-600 hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between relative font-sans',
         className
       )}
     >
@@ -55,12 +55,12 @@ export function CompanyCard({ company, onToggleSave, className }) {
             <div className="min-w-0 flex-1">
               <Link
                 to={getCompanyDetailsPath(companySlug)}
-                className="text-base font-extrabold text-slate-900 group-hover:text-brand-600 transition-colors line-clamp-1 block leading-tight"
+                className="text-base font-extrabold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors line-clamp-1 block leading-tight"
               >
                 {name}
               </Link>
               {ctc && (
-                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md inline-block mt-1 border border-emerald-200/60">
+                <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/80 px-2 py-0.5 rounded-md inline-block mt-1 border border-emerald-200/60 dark:border-emerald-800">
                   💰 {ctc}
                 </span>
               )}
@@ -74,11 +74,11 @@ export function CompanyCard({ company, onToggleSave, className }) {
             className={cn(
               'p-2 rounded-xl transition-all duration-150 border shadow-subtle shrink-0 hover:scale-105 active:scale-95',
               isSaved
-                ? 'bg-brand-50 text-brand-600 border-brand-200'
-                : 'bg-white text-slate-400 border-slate-200 hover:text-slate-700 hover:bg-slate-50'
+                ? 'bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 border-brand-200 dark:border-brand-800'
+                : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
             )}
           >
-            <Bookmark className={cn('w-4 h-4', isSaved && 'fill-brand-600')} />
+            <Bookmark className={cn('w-4 h-4', isSaved && 'fill-brand-600 dark:fill-brand-400')} />
           </button>
         </div>
 
@@ -92,7 +92,7 @@ export function CompanyCard({ company, onToggleSave, className }) {
         </div>
 
         {/* Description */}
-        <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed mb-4 font-normal">
+        <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed mb-4 font-normal">
           {description || `Explore ${name} recruitment process, eligibility criteria, and past interview questions.`}
         </p>
 
@@ -112,7 +112,7 @@ export function CompanyCard({ company, onToggleSave, className }) {
       {/* Footer Link: View Interview Rounds */}
       <Link
         to={getCompanyDetailsPath(companySlug)}
-        className="pt-3.5 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-brand-600 hover:text-brand-700 transition-colors group-hover:text-brand-700"
+        className="pt-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors group-hover:text-brand-700 dark:group-hover:text-brand-300"
       >
         <span>View Interview Rounds & PYQs</span>
         <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

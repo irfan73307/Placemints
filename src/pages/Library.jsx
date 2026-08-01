@@ -28,15 +28,15 @@ export function Library() {
   return (
     <div className="space-y-6 animate-fadeIn font-sans pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Saved Target Companies</h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Saved Target Companies</h1>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
             Quickly reference selection round patterns, hiring criteria, and practice PYQs for your targeted recruiters.
           </p>
         </div>
 
-        <div className="text-xs font-extrabold text-brand-700 bg-brand-50 px-3.5 py-1.5 rounded-full border border-brand-200/80 w-fit shrink-0">
+        <div className="text-xs font-extrabold text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-950 px-3.5 py-1.5 rounded-full border border-brand-200/80 dark:border-brand-800 w-fit shrink-0">
           {savedCompanies.length} Saved {savedCompanies.length === 1 ? 'Company' : 'Companies'}
         </div>
       </div>

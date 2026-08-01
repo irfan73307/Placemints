@@ -11,8 +11,8 @@ import { cn } from '../utils/cn';
 
 const variantStyles = {
   primary: 'bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 shadow-sm border border-transparent hover:shadow-md transition-all active:scale-[0.98]',
-  secondary: 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 active:bg-slate-100 shadow-subtle hover:border-slate-300 transition-all active:scale-[0.98]',
-  ghost: 'bg-transparent text-slate-600 hover:bg-slate-100 active:bg-slate-200 border border-transparent active:scale-[0.98]',
+  secondary: 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 active:bg-slate-100 dark:active:bg-slate-600 shadow-subtle hover:border-slate-300 dark:hover:border-slate-600 transition-all active:scale-[0.98]',
+  ghost: 'bg-transparent text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 border border-transparent active:scale-[0.98]',
   danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-sm border border-transparent active:scale-[0.98]',
 };
 

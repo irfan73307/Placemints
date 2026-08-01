@@ -129,20 +129,20 @@ export function Dashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Link
               to={ROUTES.COMPANIES}
-              className="p-5 bg-white border border-slate-200 rounded-2xl shadow-card hover:shadow-card-hover hover:border-brand-300 transition-all duration-200 group flex flex-col justify-between"
+              className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-card hover:shadow-card-hover hover:border-brand-300 dark:hover:border-brand-600 transition-all duration-200 group flex flex-col justify-between"
             >
               <div className="space-y-2">
-                <div className="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold">
+                <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 flex items-center justify-center font-bold">
                   <Building2 className="w-5 h-5" />
                 </div>
-                <h3 className="text-sm font-bold text-slate-900 group-hover:text-brand-600 transition-colors">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                   Company Archives
                 </h3>
-                <p className="text-xs text-slate-500 line-clamp-2">
+                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
                   Browse selection round details for 246+ campus recruiters.
                 </p>
               </div>
-              <div className="pt-3 flex items-center justify-between text-xs font-bold text-brand-600">
+              <div className="pt-3 flex items-center justify-between text-xs font-bold text-brand-600 dark:text-brand-400">
                 <span>Explore Directory</span>
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </div>
@@ -150,20 +150,20 @@ export function Dashboard() {
 
             <Link
               to={`${ROUTES.COMPANIES}?tab=pyqs`}
-              className="p-5 bg-white border border-slate-200 rounded-2xl shadow-card hover:shadow-card-hover hover:border-brand-300 transition-all duration-200 group flex flex-col justify-between"
+              className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-card hover:shadow-card-hover hover:border-brand-300 dark:hover:border-brand-600 transition-all duration-200 group flex flex-col justify-between"
             >
               <div className="space-y-2">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
                   <BookOpen className="w-5 h-5" />
                 </div>
-                <h3 className="text-sm font-bold text-slate-900 group-hover:text-brand-600 transition-colors">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                   SASTRA PYQs
                 </h3>
-                <p className="text-xs text-slate-500 line-clamp-2">
+                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
                   Practice 6,600+ past campus interview questions.
                 </p>
               </div>
-              <div className="pt-3 flex items-center justify-between text-xs font-bold text-brand-600">
+              <div className="pt-3 flex items-center justify-between text-xs font-bold text-brand-600 dark:text-brand-400">
                 <span>Solve PYQs</span>
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </div>
@@ -171,20 +171,20 @@ export function Dashboard() {
 
             <Link
               to={ROUTES.PROFILE}
-              className="p-5 bg-white border border-slate-200 rounded-2xl shadow-card hover:shadow-card-hover hover:border-brand-300 transition-all duration-200 group flex flex-col justify-between"
+              className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-card hover:shadow-card-hover hover:border-brand-300 dark:hover:border-brand-600 transition-all duration-200 group flex flex-col justify-between"
             >
               <div className="space-y-2">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
                   <User className="w-5 h-5" />
                 </div>
-                <h3 className="text-sm font-bold text-slate-900 group-hover:text-brand-600 transition-colors">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                   My Profile
                 </h3>
-                <p className="text-xs text-slate-500 line-clamp-2">
+                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
                   Update CGPA, target role, and coding platform links.
                 </p>
               </div>
-              <div className="pt-3 flex items-center justify-between text-xs font-bold text-brand-600">
+              <div className="pt-3 flex items-center justify-between text-xs font-bold text-brand-600 dark:text-brand-400">
                 <span>Manage Profile</span>
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </div>
@@ -192,11 +192,11 @@ export function Dashboard() {
           </div>
 
           {/* Saved Companies Section (Synced directly with Database) */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-card space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-card space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <Bookmark className="w-5 h-5 text-brand-600" />
-                <h2 className="text-base font-extrabold text-slate-900">Saved Target Companies</h2>
+                <Bookmark className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+                <h2 className="text-base font-extrabold text-slate-900 dark:text-white">Saved Target Companies</h2>
               </div>
               <Badge variant="brand">{savedCompanies.length} Saved</Badge>
             </div>
@@ -207,23 +207,23 @@ export function Dashboard() {
                   <Link
                     key={company.id}
                     to={`/companies/${company.slug || company.id}`}
-                    className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-brand-300 shadow-subtle hover:shadow-md transition-all flex items-center gap-3 group"
+                    className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 hover:border-brand-300 dark:hover:border-brand-600 shadow-subtle hover:shadow-md transition-all flex items-center gap-3 group"
                   >
                     <CompanyLogo logoUrl={company.logo || company.logoUrl} name={company.name} size="md" />
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-sm text-slate-900 group-hover:text-brand-600 transition-colors truncate">
+                      <h3 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors truncate">
                         {company.name}
                       </h3>
-                      <p className="text-xs text-slate-500 truncate">{company.ctc || 'Tier 1 Recruiter'}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{company.ctc || 'Tier 1 Recruiter'}</p>
                     </div>
                   </Link>
                 ))}
               </div>
             ) : (
-              <div className="py-8 text-center space-y-2 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
-                <Bookmark className="w-8 h-8 text-slate-300 mx-auto" />
-                <p className="text-sm font-bold text-slate-700">No saved companies yet</p>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              <div className="py-8 text-center space-y-2 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-800/30">
+                <Bookmark className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No saved companies yet</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
                   Browse company archives and click the bookmark button on any company to save it here for quick reference.
                 </p>
               </div>
@@ -233,8 +233,8 @@ export function Dashboard() {
           {/* Top Recruiter Archives Preview */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-extrabold text-slate-900">Top Campus Recruiters</h2>
-              <Link to={ROUTES.COMPANIES} className="text-xs font-bold text-brand-600 hover:underline flex items-center gap-1">
+              <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">Top Campus Recruiters</h2>
+              <Link to={ROUTES.COMPANIES} className="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
                 <span>View All 246 Companies</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
@@ -258,20 +258,20 @@ export function Dashboard() {
         {/* Right 1 Column: Refined Profile Completion Checklist & Campus Drive Status */}
         <div className="space-y-6">
           {/* Profile Completion Checklist Card */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-card space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-card space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
-                <span className="text-3xl font-black text-brand-600">{completion.percentage}%</span>
-                <h3 className="text-xs font-bold text-slate-800 mt-0.5">
+                <span className="text-3xl font-black text-brand-600 dark:text-brand-400">{completion.percentage}%</span>
+                <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5">
                   {completion.percentage === 100 ? "Your profile is 100% complete!" : "You're halfway there!"}
                 </h3>
               </div>
-              <div className="w-12 h-12 rounded-full border-4 border-brand-100 flex items-center justify-center text-xs font-black text-brand-600 bg-brand-50">
+              <div className="w-12 h-12 rounded-full border-4 border-brand-100 dark:border-brand-900 flex items-center justify-center text-xs font-black text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950">
                 {completion.percentage}%
               </div>
             </div>
 
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
               Complete these to reach 100%:
             </p>
 
@@ -282,11 +282,11 @@ export function Dashboard() {
                     {item.done ? (
                       <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                     ) : (
-                      <div className="w-4 h-4 rounded border border-slate-300 flex items-center justify-center text-[10px] text-slate-400 font-mono">
+                      <div className="w-4 h-4 rounded border border-slate-300 dark:border-slate-700 flex items-center justify-center text-[10px] text-slate-400 dark:text-slate-500 font-mono">
                         □
                       </div>
                     )}
-                    <span className={item.done ? 'text-slate-800 font-semibold' : 'text-slate-500'}>
+                    <span className={item.done ? 'text-slate-800 dark:text-slate-200 font-semibold' : 'text-slate-500 dark:text-slate-400'}>
                       {item.label}
                     </span>
                   </div>
@@ -307,38 +307,38 @@ export function Dashboard() {
           </div>
 
           {/* Upcoming Drives Card */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-card space-y-4">
-            <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Calendar className="w-4 h-4 text-brand-600" />
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-card space-y-4">
+            <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <Calendar className="w-4 h-4 text-brand-600 dark:text-brand-400" />
               <span>Upcoming Placement Drives</span>
             </h3>
 
             <div className="space-y-3">
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-xl space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <CompanyLogo logoUrl="https://logo.clearbit.com/tcs.com" name="TCS" size="xs" />
-                    <span className="text-xs font-bold text-slate-900">TCS Digital & Prime</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">TCS Digital & Prime</span>
                   </div>
                   <Badge variant="success" size="xs">Open</Badge>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                   <span>Last Date: Aug 15</span>
-                  <Link to="/companies/tcs-digital" className="text-brand-600 font-bold hover:underline">Apply / Details</Link>
+                  <Link to="/companies/tcs-digital" className="text-brand-600 dark:text-brand-400 font-bold hover:underline">Apply / Details</Link>
                 </div>
               </div>
 
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-xl space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <CompanyLogo logoUrl="https://logo.clearbit.com/zoho.com" name="Zoho" size="xs" />
-                    <span className="text-xs font-bold text-slate-900">Zoho Corporation</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">Zoho Corporation</span>
                   </div>
                   <Badge variant="warning" size="xs">Closing Soon</Badge>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                   <span>Last Date: Aug 10</span>
-                  <Link to="/companies/zoho" className="text-brand-600 font-bold hover:underline">Apply / Details</Link>
+                  <Link to="/companies/zoho" className="text-brand-600 dark:text-brand-400 font-bold hover:underline">Apply / Details</Link>
                 </div>
               </div>
             </div>

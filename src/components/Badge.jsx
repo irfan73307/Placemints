@@ -8,13 +8,13 @@ import React from 'react';
 import { cn } from '../utils/cn';
 
 const variantStyles = {
-  default: 'bg-slate-100/80 text-slate-700 border-slate-200/80',
-  brand: 'bg-brand-50 text-brand-700 border-brand-200/80 font-bold',
-  info: 'bg-indigo-50 text-indigo-700 border-indigo-200/80 font-semibold',
-  success: 'bg-emerald-50 text-emerald-700 border-emerald-200/80 font-semibold',
-  warning: 'bg-amber-50 text-amber-700 border-amber-200/80 font-semibold',
-  danger: 'bg-red-50 text-red-700 border-red-200/80 font-semibold',
-  neutral: 'bg-slate-100 text-slate-600 border-slate-200 font-medium',
+  default: 'bg-slate-100/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-700',
+  brand: 'bg-brand-50 dark:bg-brand-950 text-brand-700 dark:text-brand-300 border-brand-200/80 dark:border-brand-800 font-bold',
+  info: 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border-indigo-200/80 dark:border-indigo-800 font-semibold',
+  success: 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800 font-semibold',
+  warning: 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200/80 dark:border-amber-800 font-semibold',
+  danger: 'bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 border-red-200/80 dark:border-red-800 font-semibold',
+  neutral: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 font-medium',
 };
 
 const sizeStyles = {
