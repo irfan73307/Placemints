@@ -25,7 +25,7 @@ export function AppLayout() {
         <Header />
 
         {/* Dynamic Page Content Outlet */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto pb-20 lg:pb-8">
+        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto pb-24 lg:pb-8 overflow-x-hidden">
           <Outlet />
         </main>
 

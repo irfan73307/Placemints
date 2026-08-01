@@ -217,7 +217,7 @@ export function CompanyDetails() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="border-b border-slate-200 dark:border-slate-800 flex items-center gap-6 text-sm font-semibold">
+      <div className="border-b border-slate-200 dark:border-slate-800 flex items-center gap-4 sm:gap-6 text-sm font-semibold overflow-x-auto no-scrollbar whitespace-nowrap pt-1">
         <button
           onClick={() => setActiveTab('overview')}
           className={`pb-3 border-b-2 transition-all ${
