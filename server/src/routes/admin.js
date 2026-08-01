@@ -3,6 +3,7 @@ const {
   getAdminStats,
   getStudents,
   getStudentDetails,
+  deleteStudent,
   getAdminsList,
   addAdmin,
   toggleAdminStatus,
@@ -25,6 +26,7 @@ router.get('/stats', requireAdmin, getAdminStats);
 router.get('/students', requireAdmin, getStudents);
 router.get('/students/export', requireAdmin, exportStudentsData);
 router.get('/students/:id', requireAdmin, getStudentDetails);
+router.delete('/students/:id', requireAdmin, deleteStudent);
 router.get('/manage', requireAdmin, getAdminsList);
 
 // Admin Company Logo Management Endpoints

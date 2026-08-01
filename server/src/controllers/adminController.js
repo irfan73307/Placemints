@@ -118,6 +118,10 @@ async function getStudents(req, res) {
       orderBy = [{ name: 'asc' }];
     }
 
+    const grandTotalStudents = await prisma.user.count({
+      where: { role: { not: 'ADMIN' } },
+    });
+
     const totalStudents = await prisma.user.count({ where: whereClause });
 
     const users = await prisma.user.findMany({
@@ -168,8 +172,11 @@ async function getStudents(req, res) {
 
     res.json({
       data: formattedStudents,
+      totalCount: grandTotalStudents,
+      filteredCount: totalStudents,
       pagination: {
         total: totalStudents,
+        grandTotal: grandTotalStudents,
         page: parseInt(page),
         limit: parseInt(limit),
         totalPages: Math.ceil(totalStudents / parseInt(limit)),
@@ -178,6 +185,38 @@ async function getStudents(req, res) {
   } catch (err) {
     console.error('Get admin students error:', err);
     res.status(500).json({ message: 'Failed to retrieve students list.' });
+  }
+}
+
+// DELETE /api/admin/students/:id
+async function deleteStudent(req, res) {
+  try {
+    const { id } = req.params;
+
+    const student = await prisma.user.findFirst({
+      where: {
+        id,
+        role: { not: 'ADMIN' },
+      },
+    });
+
+    if (!student) {
+      return res.status(404).json({ message: 'Student user not found or is an admin account.' });
+    }
+
+    // Delete student user from database
+    await prisma.user.delete({
+      where: { id: student.id },
+    });
+
+    res.json({
+      success: true,
+      message: `Student "${student.fullName || student.name || student.email}" removed from database.`,
+      deletedId: student.id,
+    });
+  } catch (err) {
+    console.error('Delete student error:', err);
+    res.status(500).json({ message: 'Failed to remove student from database.' });
   }
 }
 
@@ -738,6 +777,7 @@ module.exports = {
   getAdminStats,
   getStudents,
   getStudentDetails,
+  deleteStudent,
   getAdminsList,
   addAdmin,
   toggleAdminStatus,
