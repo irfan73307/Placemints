@@ -168,7 +168,7 @@ export function CompanyDetails() {
       </div>
 
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-6 border border-slate-800">
+      <div className="bg-gradient-to-r from-brand-700 via-brand-600 to-indigo-600 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 border border-brand-500/30">
         <div className="flex items-center gap-5">
           <CompanyLogo logoUrl={company.logo || company.logoUrl} name={company.name} size="xl" />
           <div className="space-y-1.5">
