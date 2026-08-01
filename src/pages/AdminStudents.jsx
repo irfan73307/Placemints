@@ -21,6 +21,7 @@ import {
 import apiClient from '../services/api';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
+import CompanyLogo from '../components/CompanyLogo';
 
 export default function AdminStudents() {
   const [students, setStudents] = useState([]);
@@ -390,10 +391,11 @@ export default function AdminStudents() {
                   {studentDetails?.savedCompanies?.length === 0 ? (
                     <p className="text-xs text-slate-400">No saved target companies yet.</p>
                   ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                       {studentDetails?.savedCompanies?.map((s) => (
-                        <div key={s.id} className="p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200">
-                          {s.name}
+                        <div key={s.id} className="p-2.5 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2.5">
+                          <CompanyLogo logoUrl={s.logoUrl} name={s.name} size="sm" />
+                          <span className="truncate">{s.name}</span>
                         </div>
                       ))}
                     </div>

@@ -15,6 +15,7 @@ import { useLibrary } from '../contexts/LibraryContext';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { useToast } from '../contexts/ToastContext';
+import { CompanyLogo } from '../components/CompanyLogo';
 import { 
   Building2, 
   Bookmark, 
@@ -169,11 +170,7 @@ export function CompanyDetails() {
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-6 border border-slate-800">
         <div className="flex items-center gap-5">
-          <img
-            src={company.logo || company.logoUrl}
-            alt={company.name}
-            className="w-20 h-20 rounded-2xl object-contain bg-white p-2 border border-slate-700 shadow-md shrink-0"
-          />
+          <CompanyLogo logoUrl={company.logo || company.logoUrl} name={company.name} size="xl" />
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">{company.name}</h1>

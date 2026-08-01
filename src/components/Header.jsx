@@ -11,7 +11,7 @@ import { Bell, GraduationCap, Search, CheckCircle2, Calendar, FileText, X, Sun, 
 import { Avatar } from './Avatar';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { ROUTES } from '../constants/routes';
+import { getFormattedDepartment } from '../utils/departmentUtils';
 
 export function Header() {
   const { user } = useAuth();
@@ -167,8 +167,8 @@ export function Header() {
             <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-tight">
               {user?.name || 'SASTRA Student'}
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              {user?.department || 'Computer Science'}
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+              {getFormattedDepartment(user?.department || user?.branch).mobile}
             </div>
           </div>
         </Link>

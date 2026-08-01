@@ -14,6 +14,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { CompanyCard } from '../components/CompanyCard';
+import { CompanyLogo } from '../components/CompanyLogo';
 import { useAuth } from '../contexts/AuthContext';
 import { useLibrary } from '../contexts/LibraryContext';
 import { getCompanies } from '../services/companyService';
@@ -156,11 +157,7 @@ export function Dashboard() {
                     to={`/companies/${company.slug || company.id}`}
                     className="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 hover:border-brand-300 shadow-subtle transition-all flex items-center gap-3 group"
                   >
-                    <img
-                      src={company.logo || company.logoUrl}
-                      alt={company.name}
-                      className="w-10 h-10 rounded-xl object-contain bg-white p-1 border border-slate-200 shrink-0"
-                    />
+                    <CompanyLogo logoUrl={company.logo || company.logoUrl} name={company.name} size="md" />
                     <div className="min-w-0 flex-1">
                       <h3 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-brand-600 transition-colors truncate">
                         {company.name}

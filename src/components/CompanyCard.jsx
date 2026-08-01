@@ -2,20 +2,22 @@
  * CompanyCard Component
  * 
  * Renders company logo, name, short description, metadata tags (Badge), and bookmark/save toggle.
- * Supports Dark Mode styling.
+ * Uses CompanyLogo for smooth fallback handling to eliminate broken images.
  */
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Bookmark, Building2, ChevronRight } from 'lucide-react';
+import { Bookmark, ChevronRight } from 'lucide-react';
 import { Badge } from './Badge';
+import { CompanyLogo } from './CompanyLogo';
 import { getCompanyDetailsPath } from '../constants/routes';
 import { cn } from '../utils/cn';
 
 export function CompanyCard({ company, onToggleSave, className }) {
   if (!company) return null;
 
-  const { id, name, logo, description, tags = [], isSaved = false, ctc, tier } = company;
+  const { id, name, logo, logoUrl, description, tags = [], isSaved = false, ctc, tier } = company;
+  const logoImage = logo || logoUrl || company.logoUrl;
 
   const handleBookmarkClick = (e) => {
     e.preventDefault();
@@ -36,23 +38,7 @@ export function CompanyCard({ company, onToggleSave, className }) {
       <div>
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-3">
-            {logo ? (
-              <img
-                src={logo}
-                alt={`${name} logo`}
-                className="w-11 h-11 rounded-lg object-contain bg-slate-50 dark:bg-white p-1 border border-slate-100 dark:border-slate-700 shrink-0"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
-                }}
-              />
-            ) : null}
-            <div
-              style={{ display: logo ? 'none' : 'flex' }}
-              className="w-11 h-11 rounded-lg bg-brand-50 dark:bg-brand-950 border border-brand-100 dark:border-brand-800 flex items-center justify-center text-brand-700 dark:text-brand-300 font-bold text-lg shrink-0"
-            >
-              <Building2 className="w-6 h-6 text-brand-600 dark:text-brand-400" />
-            </div>
+            <CompanyLogo logoUrl={logoImage} name={name} size="md" />
             <div>
               <Link
                 to={getCompanyDetailsPath(id)}
