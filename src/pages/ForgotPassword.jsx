@@ -13,6 +13,8 @@ import { forgotPassword } from '../services/authService';
 import { ROUTES } from '../constants/routes';
 import { Mail, CheckCircle2, ArrowLeft, AlertCircle } from 'lucide-react';
 
+import { validateSastraEmail } from '../utils/validation';
+
 export function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,8 +27,9 @@ export function ForgotPassword() {
     e.preventDefault();
     setErrorMessage('');
 
-    if (!email.trim() || !email.toLowerCase().trim().endsWith('@sastra.ac.in')) {
-      setErrorMessage('Please enter a valid official SASTRA email address (@sastra.ac.in).');
+    const emailCheck = validateSastraEmail(email);
+    if (!emailCheck.isValid) {
+      setErrorMessage(emailCheck.message);
       return;
     }
 

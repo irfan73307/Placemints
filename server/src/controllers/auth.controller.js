@@ -203,6 +203,11 @@ async function register(req, res) {
       return res.status(400).json({ message: 'Only SASTRA University students (@sastra.ac.in) can access Placemints.' });
     }
 
+    const rollPart = normalizedEmail.split('@')[0];
+    if (!/^\d{9}$/.test(rollPart)) {
+      return res.status(400).json({ message: 'SASTRA email prefix must be your exact 9-digit roll number (e.g. 127XXXXXX@sastra.ac.in).' });
+    }
+
     const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existingUser) {
       return res.status(400).json({ message: 'An account with this SASTRA email already exists. Please sign in.' });

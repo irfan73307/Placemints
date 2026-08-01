@@ -42,9 +42,13 @@ export function Landing() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.LOGIN)}>
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.LOGIN)}
+              className="text-sm font-extrabold text-slate-800 hover:text-brand-600 px-3.5 py-2 rounded-xl hover:bg-slate-100 transition-colors"
+            >
               Sign In
-            </Button>
+            </button>
             <Button variant="primary" size="sm" onClick={() => navigate(ROUTES.LOGIN)}>
               Get Started
             </Button>

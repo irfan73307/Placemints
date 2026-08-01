@@ -17,6 +17,8 @@ import { loginWithEmail } from '../services/authService';
 import { ROUTES } from '../constants/routes';
 import { AlertCircle, Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
+import { validateSastraEmail } from '../utils/validation';
+
 export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -61,8 +63,9 @@ export function Login() {
       return;
     }
 
-    if (!email.toLowerCase().trim().endsWith('@sastra.ac.in')) {
-      setErrorMessage('Only SASTRA University students (@sastra.ac.in) can access Placemints.');
+    const emailCheck = validateSastraEmail(email);
+    if (!emailCheck.isValid) {
+      setErrorMessage(emailCheck.message);
       return;
     }
 
