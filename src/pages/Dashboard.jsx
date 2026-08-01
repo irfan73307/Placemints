@@ -1,13 +1,12 @@
 /**
  * Dashboard Page Component
  * 
- * Premium Purple #5B4CF5 Welcome Hero Redesign (Matching Reference Mockup):
- * - Full-width rounded container with purple gradient and soft ambient glows.
- * - Top Badge: SASTRA University Campus Placement Dashboard.
- * - Welcome Headline: Welcome back, {Student Name} 👋.
- * - 4 Glassmorphic Info Chips: Department, Batch, CGPA, Placement Goal with custom icons & colors.
- * - Vector Student Illustration on the right side (~30-35% width, floating, bottom aligned).
- * - Profile Completion Card placed outside the hero banner in right sidebar column.
+ * Linear/Stripe inspired SaaS student placement dashboard featuring:
+ * - Premium Purple #5B4CF5 Welcome Banner with structured metric cards (Dept, Batch, CGPA, Goal).
+ * - Interactive Profile Completion Checklist Card (50% progress, items checklist, Update Profile CTA).
+ * - Premium Quick Action Cards with smooth hover micro-animations.
+ * - Live Saved Companies section synced 100% with Supabase PostgreSQL database.
+ * - Top Campus Recruiters grid with CompanyLogo fallback handling.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -16,7 +15,6 @@ import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { CompanyCard } from '../components/CompanyCard';
 import { CompanyLogo } from '../components/CompanyLogo';
-import { StudentIllustration } from '../components/StudentIllustration';
 import { useAuth } from '../contexts/AuthContext';
 import { useLibrary } from '../contexts/LibraryContext';
 import { getCompanies } from '../services/companyService';
@@ -29,14 +27,16 @@ import {
   Bookmark, 
   Search, 
   ArrowRight, 
+  TrendingUp,
   CheckCircle2,
   Building2,
   BookOpen,
   User,
   Calendar,
   ChevronRight,
+  ShieldCheck,
   GraduationCap,
-  Star
+  Award
 } from 'lucide-react';
 
 export function Dashboard() {
@@ -87,92 +87,52 @@ export function Dashboard() {
 
   return (
     <div className="space-y-8 animate-fadeIn pb-12 font-sans">
-      {/* 1. Redesigned Welcome Hero Banner (Matching Reference Image 1:1) */}
-      <div className="bg-gradient-to-r from-[#4F46E5] via-[#5B4CF5] to-[#3730A3] text-white rounded-[2rem] p-6 sm:p-8 lg:p-10 shadow-2xl relative overflow-hidden border border-white/20">
-        {/* Subtle Ambient Background Decorative Glows */}
-        <div className="absolute -top-24 -left-24 w-72 h-72 bg-indigo-400/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 right-1/3 w-80 h-80 bg-purple-400/20 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex flex-col md:flex-row items-stretch md:items-end justify-between gap-6 relative z-10">
-          {/* Left Side Content */}
-          <div className="flex-1 space-y-6">
-            {/* Top Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white/95 text-xs font-semibold shadow-sm">
-              <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
-              <span>SASTRA University Campus Placement Dashboard</span>
+      {/* 1. Premium Purple #5B4CF5 Welcome Banner */}
+      <div className="bg-gradient-to-r from-brand-700 via-brand-600 to-indigo-600 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden space-y-6 border border-brand-500/30">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-3">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 text-white/90 text-xs font-semibold backdrop-blur-md border border-white/20">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>SASTRA University Placement Prep Hub</span>
             </div>
 
-            {/* Large Welcome Headline */}
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-snug">
-              Welcome back, {user?.fullName || user?.name || 'Shaik Irfan'} 👋
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+              Welcome back, {user?.fullName || user?.name || 'SASTRA Student'} 👋
             </h1>
 
-            {/* 4 Clean Glassmorphic Information Cards Row */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
-              {/* Card 1: Department */}
-              <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-3.5 flex items-center gap-3 hover:bg-white/15 hover:scale-[1.02] transition-all duration-200 shadow-sm">
-                <div className="p-2.5 rounded-xl bg-blue-500/25 text-blue-300 shrink-0">
-                  <GraduationCap className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[11px] font-semibold text-slate-200/90 block leading-tight">Department</span>
-                  <span className="text-xs sm:text-sm font-extrabold text-white block truncate mt-0.5" title={formattedDept.desktop}>
-                    {formattedDept.desktop}
-                  </span>
-                </div>
-              </div>
-
-              {/* Card 2: Batch */}
-              <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-3.5 flex items-center gap-3 hover:bg-white/15 hover:scale-[1.02] transition-all duration-200 shadow-sm">
-                <div className="p-2.5 rounded-xl bg-indigo-500/25 text-indigo-200 shrink-0">
-                  <Calendar className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[11px] font-semibold text-slate-200/90 block leading-tight">Batch</span>
-                  <span className="text-xs sm:text-sm font-extrabold text-white block mt-0.5">
-                    {user?.graduationYear || user?.batchYear || '2026'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Card 3: CGPA (Soft Yellow Accent) */}
-              <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-3.5 flex items-center gap-3 hover:bg-white/15 hover:scale-[1.02] transition-all duration-200 shadow-sm">
-                <div className="p-2.5 rounded-xl bg-amber-500/25 text-amber-300 shrink-0">
-                  <Star className="w-5 h-5 fill-amber-300" />
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[11px] font-semibold text-slate-200/90 block leading-tight">CGPA</span>
-                  <span className="text-xs sm:text-sm font-black text-amber-300 block mt-0.5">
-                    {user?.cgpa || '8.5475'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Card 4: Placement Goal (Green Accent) */}
-              <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-3.5 flex items-center gap-3 hover:bg-white/15 hover:scale-[1.02] transition-all duration-200 shadow-sm">
-                <div className="p-2.5 rounded-xl bg-emerald-500/25 text-emerald-300 shrink-0">
-                  <Target className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[11px] font-semibold text-slate-200/90 block leading-tight">Goal</span>
-                  <span className="text-xs sm:text-sm font-extrabold text-emerald-200 block truncate mt-0.5" title={user?.placementGoal || 'Software Engineer (SDE-1)'}>
-                    {user?.placementGoal || user?.targetRole || 'Software Engineer (SDE-1)'}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <p className="text-xs sm:text-sm text-indigo-100/90 max-w-xl font-medium">
+              Access SASTRA campus selection round archives, top PYQs, and company placement statistics.
+            </p>
           </div>
 
-          {/* Right Side: Vector Student Illustration (Occupies 30-35% width, floating, bottom aligned) */}
-          <div className="hidden md:block w-72 lg:w-96 shrink-0 relative z-10 self-end -mb-8 -mr-4 transform hover:scale-105 transition-transform duration-300">
-            <StudentIllustration className="drop-shadow-2xl" />
+          {/* Quick Stats Grid */}
+          <div className="grid grid-cols-2 gap-3 shrink-0 sm:min-w-[280px]">
+            <div className="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/15 text-center">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-200 block">Department</span>
+              <span className="text-xs sm:text-sm font-bold text-white block mt-0.5 truncate">{formattedDept.code}</span>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/15 text-center">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-200 block">Graduation Batch</span>
+              <span className="text-xs sm:text-sm font-bold text-white block mt-0.5">{user?.graduationYear || user?.batchYear || '2026'}</span>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/15 text-center">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-200 block">Academic CGPA</span>
+              <span className="text-xs sm:text-sm font-black text-amber-300 block mt-0.5">{user?.cgpa || '8.50'}</span>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/15 text-center">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-200 block">Placement Goal</span>
+              <span className="text-xs sm:text-sm font-bold text-emerald-300 block mt-0.5 truncate">{user?.placementGoal || 'SDE-1'}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 2. Main Content Grid: Search, Recruiters & Separate Profile Completion Card */}
+      {/* 2. Main Content Grid: Search, Recruiters & Profile Checklist */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left 2 Columns: Search Bar, Quick Actions, Saved Companies & Top Recruiters */}
+        {/* Left 2 Columns: Search, Saved Companies & Top Recruiters */}
         <div className="lg:col-span-2 space-y-6">
           {/* Quick Search */}
           <form onSubmit={handleSearchSubmit} className="relative">
@@ -260,7 +220,7 @@ export function Dashboard() {
             </Link>
           </div>
 
-          {/* Saved Target Companies Section */}
+          {/* Saved Companies Section (Synced directly with Database) */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-card space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
@@ -324,9 +284,9 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* Right 1 Column: Profile Completion Card (Outside Hero) & Upcoming Drives */}
+        {/* Right 1 Column: Refined Profile Completion Checklist & Campus Drive Status */}
         <div className="space-y-6">
-          {/* Profile Completion Card (Separate Card Outside Hero Banner) */}
+          {/* Profile Completion Checklist Card */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-card space-y-5">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
@@ -335,7 +295,7 @@ export function Dashboard() {
                   {completion.percentage === 100 ? "Your profile is 100% complete!" : "You're halfway there!"}
                 </h3>
               </div>
-              <div className="w-12 h-12 rounded-full border-4 border-brand-100 flex items-center justify-center text-xs font-black text-brand-600 bg-brand-50 shadow-inner">
+              <div className="w-12 h-12 rounded-full border-4 border-brand-100 flex items-center justify-center text-xs font-black text-brand-600 bg-brand-50">
                 {completion.percentage}%
               </div>
             </div>
@@ -375,7 +335,7 @@ export function Dashboard() {
             </Link>
           </div>
 
-          {/* Upcoming Placement Drives Card */}
+          {/* Upcoming Drives Card */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-card space-y-4">
             <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Calendar className="w-4 h-4 text-brand-600" />
