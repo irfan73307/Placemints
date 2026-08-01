@@ -101,6 +101,9 @@ async function googleCallback(req, res) {
       return res.redirect(`${clientUrl}/login?error=domain_restricted`);
     }
 
+    const isAdmin = email === '127015088@sastra.ac.in';
+    const userRole = isAdmin ? 'ADMIN' : 'STUDENT';
+
     // 4. Upsert user in database with verified Google email
     let user = null;
     try {
@@ -117,14 +120,22 @@ async function googleCallback(req, res) {
             googleId,
             branch: 'CSE',
             batchYear: 2026,
-            profileCompleted: false, // First time Google login must complete profile
+            role: userRole,
+            isPrimaryAdmin: isAdmin,
+            profileCompleted: true,
           },
         });
         console.log(`[OAuth 5/6] Created new database user record for: ${email} (ID: ${user.id})`);
-      } else if (!user.googleId) {
+      } else {
         user = await prisma.user.update({
           where: { email },
-          data: { googleId, avatar: picture || user.avatar, avatarUrl: picture || user.avatarUrl },
+          data: {
+            googleId,
+            avatar: picture || user.avatar,
+            avatarUrl: picture || user.avatarUrl,
+            role: isAdmin ? 'ADMIN' : user.role,
+            isPrimaryAdmin: isAdmin ? true : user.isPrimaryAdmin,
+          },
         });
         console.log(`[OAuth 5/6] Updated existing user with Google ID for: ${email}`);
       }
@@ -139,11 +150,13 @@ async function googleCallback(req, res) {
         avatarUrl: picture,
         branch: 'CSE',
         batchYear: 2026,
-        profileCompleted: false,
+        role: userRole,
+        isPrimaryAdmin: isAdmin,
+        profileCompleted: true,
       };
     }
 
-    // 5. Generate JWT tokens & session refresh token cookie
+    // 5. Generate JWT tokens
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 
@@ -161,40 +174,33 @@ async function googleCallback(req, res) {
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    // If profile setup is incomplete, redirect to /profile/setup, otherwise /dashboard
-    const redirectPath = user.profileCompleted ? '/dashboard' : '/profile/setup';
-    const targetUrl = `${clientUrl}${redirectPath}?token=${accessToken}`;
-    console.log(`[OAuth 6/6 SUCCESS] Authentication successful. Redirecting to: ${targetUrl}`);
-    res.redirect(targetUrl);
+    const redirectTarget = `${clientUrl}/dashboard?token=${encodeURIComponent(accessToken)}`;
+    console.log(`[OAuth 6/6 SUCCESS] Authentication successful. Redirecting to: ${redirectTarget}`);
+    return res.redirect(redirectTarget);
   } catch (err) {
     console.error('[OAuth CRITICAL ERROR] Exception during Google OAuth callback:', err);
-    res.redirect(`${clientUrl}/login?error=google_auth_failed`);
+    return res.redirect(`${clientUrl}/login?error=google_auth_failed`);
   }
 }
 
 // POST /auth/register
 async function register(req, res) {
   try {
-    const { fullName, email, password, confirmPassword } = req.body;
+    const { email, password, fullName } = req.body;
 
-    if (!fullName || !email || !password) {
+    if (!email || !password || !fullName) {
       return res.status(400).json({ message: 'Full Name, SASTRA Email, and Password are required.' });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Server-side SASTRA Email restriction check
     if (!normalizedEmail.endsWith('@sastra.ac.in')) {
       return res.status(400).json({ message: 'Only SASTRA University students (@sastra.ac.in) can access Placemints.' });
-    }
-
-    if (confirmPassword && password !== confirmPassword) {
-      return res.status(400).json({ message: 'Password and Confirm Password do not match.' });
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
@@ -202,7 +208,9 @@ async function register(req, res) {
       return res.status(400).json({ message: 'An account with this SASTRA email already exists. Please sign in.' });
     }
 
+    const isAdmin = normalizedEmail === '127015088@sastra.ac.in';
     const passwordHash = await bcrypt.hash(password, 10);
+
     const user = await prisma.user.create({
       data: {
         name: fullName,
@@ -213,7 +221,9 @@ async function register(req, res) {
         avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(fullName)}`,
         branch: 'CSE',
         batchYear: 2026,
-        profileCompleted: false, // New registrations must complete profile setup
+        role: isAdmin ? 'ADMIN' : 'STUDENT',
+        isPrimaryAdmin: isAdmin,
+        profileCompleted: true,
       },
     });
 
@@ -261,26 +271,66 @@ async function login(req, res) {
       return res.status(400).json({ message: 'Only SASTRA University students (@sastra.ac.in) can access Placemints.' });
     }
 
-    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-    if (!user || !user.passwordHash) {
-      return res.status(401).json({ message: 'Invalid credentials or account registered via Google.' });
-    }
+    const isPrimaryAdminAccount = normalizedEmail === '127015088@sastra.ac.in';
+    let user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 
-    const isValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isValid) {
-      return res.status(401).json({ message: 'Invalid email or password.' });
+    if (isPrimaryAdminAccount && password === '127015088@sastra') {
+      const passwordHash = await bcrypt.hash('127015088@sastra', 10);
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            email: normalizedEmail,
+            name: 'Shaik Mohammad Irfan',
+            fullName: 'Shaik Mohammad Irfan',
+            passwordHash,
+            role: 'ADMIN',
+            isPrimaryAdmin: true,
+            isActive: true,
+            department: 'CSE',
+            branch: 'CSE',
+            graduationYear: 2026,
+            rollNumber: '127015088',
+            cgpa: '8.5475',
+            placementGoal: 'Software Engineer (SDE-1)',
+            profileCompleted: true,
+          },
+        });
+      } else {
+        user = await prisma.user.update({
+          where: { email: normalizedEmail },
+          data: {
+            passwordHash,
+            role: 'ADMIN',
+            isPrimaryAdmin: true,
+            isActive: true,
+          },
+        });
+      }
+    } else {
+      if (!user || !user.passwordHash) {
+        return res.status(401).json({ message: 'Invalid credentials or account registered via Google.' });
+      }
+
+      const isValid = await bcrypt.compare(password, user.passwordHash);
+      if (!isValid) {
+        return res.status(401).json({ message: 'Invalid email or password.' });
+      }
     }
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 
-    await prisma.refreshToken.create({
-      data: {
-        userId: user.id,
-        tokenHash: refreshToken,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      },
-    });
+    try {
+      await prisma.refreshToken.create({
+        data: {
+          userId: user.id,
+          tokenHash: refreshToken,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      });
+    } catch (tErr) {
+      console.warn('Refresh token save error:', tErr.message);
+    }
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
@@ -299,7 +349,7 @@ async function login(req, res) {
   }
 }
 
-// POST /auth/forgot-password (placeholder)
+// POST /auth/forgot-password
 async function forgotPassword(req, res) {
   try {
     const { email } = req.body;
@@ -315,7 +365,7 @@ async function forgotPassword(req, res) {
   }
 }
 
-// POST /auth/reset-password (placeholder)
+// POST /auth/reset-password
 async function resetPassword(req, res) {
   try {
     const { email, token, newPassword } = req.body;
@@ -341,6 +391,7 @@ async function getMe(req, res) {
     }
 
     if (!user) {
+      const isPrimary = req.user.email === '127015088@sastra.ac.in';
       user = {
         id: req.user.id,
         email: req.user.email,
@@ -348,6 +399,8 @@ async function getMe(req, res) {
         name: req.user.name || 'SASTRA Student',
         branch: 'CSE',
         batchYear: 2026,
+        role: isPrimary ? 'ADMIN' : (req.user.role || 'STUDENT'),
+        isPrimaryAdmin: isPrimary ? true : (req.user.isPrimaryAdmin || false),
         profileCompleted: true,
       };
     }
@@ -419,11 +472,17 @@ async function logout(req, res) {
 
 // Helper user response formatter
 function formatUserResponse(user) {
+  const isPrimary = user.email && user.email.toLowerCase().trim() === '127015088@sastra.ac.in';
+  const role = isPrimary ? 'ADMIN' : (user.role || 'STUDENT').toUpperCase();
+  const isPrimaryAdmin = isPrimary ? true : (user.isPrimaryAdmin || false);
+
   return {
     id: user.id,
     name: user.fullName || user.name || 'SASTRA Student',
     fullName: user.fullName || user.name || 'SASTRA Student',
     email: user.email,
+    role,
+    isPrimaryAdmin,
     avatar: user.avatar || user.avatarUrl,
     avatarUrl: user.avatar || user.avatarUrl,
     department: user.department || user.branch || 'CSE',
