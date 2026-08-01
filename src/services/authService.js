@@ -7,7 +7,11 @@
 import apiClient from './api';
 
 export async function loginWithGoogle() {
-  window.location.href = 'http://localhost:5000/auth/google';
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+  const defaultApi = `http://${hostname}:5000/api`;
+  const apiBase = import.meta.env.VITE_API_BASE_URL || defaultApi;
+  const serverUrl = apiBase.replace(/\/api\/?$/, '');
+  window.location.href = `${serverUrl}/auth/google`;
 }
 
 export async function registerUser({ fullName, email, password, confirmPassword }) {
