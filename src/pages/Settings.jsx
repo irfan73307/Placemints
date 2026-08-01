@@ -86,8 +86,10 @@ export function Settings() {
     }
   };
 
+  const isAdmin = user?.role === 'ADMIN' || user?.isAdmin;
+
   return (
-    <div className="max-w-3xl mx-auto space-y-8 animate-fadeIn pb-16">
+    <div className="max-w-3xl mx-auto space-y-8 animate-fadeIn pb-16 font-sans">
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-card border border-slate-800 space-y-2">
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Application Settings</h1>
@@ -97,6 +99,67 @@ export function Settings() {
       </div>
 
       <div className="space-y-6">
+        {/* ADMIN MANAGEMENT PORTAL (Mobile & Desktop Quick Access) */}
+        {isAdmin && (
+          <div className="bg-gradient-to-r from-amber-950/90 via-slate-900 to-indigo-950/90 rounded-2xl border border-amber-500/40 p-6 shadow-xl space-y-4 text-white">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-amber-400" />
+                <h2 className="text-base font-extrabold tracking-tight">Admin Management Portal</h2>
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[10px] font-bold uppercase tracking-wider">
+                Admin Privileges Active
+              </span>
+            </div>
+
+            <p className="text-xs text-amber-100/80">
+              Quick Mobile & Desktop navigation to SASTRA placement database controls and admin account management.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <Link
+                to="/admin/students"
+                className="p-4 bg-white/10 hover:bg-white/15 rounded-xl border border-white/15 transition-all flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-400/30 shrink-0">
+                    <GraduationCap className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="font-bold text-sm text-white block group-hover:text-amber-300 transition-colors">
+                      Student Data Directory
+                    </span>
+                    <span className="text-[11px] text-amber-200/70 block truncate">
+                      Manage students, filter CGPA, export CSV & remove records
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform shrink-0 ml-2" />
+              </Link>
+
+              <Link
+                to="/admin/settings"
+                className="p-4 bg-white/10 hover:bg-white/15 rounded-xl border border-white/15 transition-all flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 shrink-0">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="font-bold text-sm text-white block group-hover:text-indigo-300 transition-colors">
+                      Admin Settings & RBAC
+                    </span>
+                    <span className="text-[11px] text-indigo-200/70 block truncate">
+                      Manage admin accounts, primary credentials & system logs
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-indigo-400 group-hover:translate-x-1 transition-transform shrink-0 ml-2" />
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* SECTION 1: Account Settings */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-card space-y-4">
           <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">

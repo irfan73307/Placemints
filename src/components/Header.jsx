@@ -8,7 +8,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, GraduationCap, CheckCircle2, Calendar, FileText, X, Sun, Moon } from 'lucide-react';
+import { Bell, GraduationCap, CheckCircle2, Calendar, FileText, X, Sun, Moon, ShieldCheck } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -18,6 +18,7 @@ import { ROUTES } from '../constants/routes';
 export function Header() {
   const { user } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const isAdmin = user?.role === 'ADMIN' || user?.isAdmin;
 
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -62,6 +63,18 @@ export function Header() {
 
       {/* Actions & Profile */}
       <div className="flex items-center gap-2 sm:gap-3">
+        {/* Admin Quick Portal Access Badge (Mobile & Desktop) */}
+        {isAdmin && (
+          <Link
+            to="/admin/students"
+            className="px-2.5 py-1 rounded-xl bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-extrabold flex items-center gap-1.5 hover:scale-105 transition-all shadow-subtle"
+            title="Open Admin Directory"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            <span>Admin</span>
+          </Link>
+        )}
+
         {/* Dark Mode Toggle Button */}
         <button
           type="button"
