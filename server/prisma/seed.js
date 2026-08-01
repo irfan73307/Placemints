@@ -155,6 +155,36 @@ const mockCompanies = [
 async function seed() {
   console.log('🌱 Starting database seed...');
 
+  // Create Primary Admin User
+  const adminPasswordHash = await bcrypt.hash('127015088@sastra', 10);
+  const primaryAdmin = await prisma.user.upsert({
+    where: { email: '127015088@sastra.ac.in' },
+    update: {
+      role: 'ADMIN',
+      isPrimaryAdmin: true,
+      isActive: true,
+    },
+    create: {
+      email: '127015088@sastra.ac.in',
+      name: 'Shaik Mohammad Irfan (Primary Admin)',
+      fullName: 'Shaik Mohammad Irfan',
+      passwordHash: adminPasswordHash,
+      role: 'ADMIN',
+      isPrimaryAdmin: true,
+      isActive: true,
+      branch: 'CSE',
+      department: 'CSE',
+      batchYear: 2026,
+      graduationYear: 2026,
+      rollNumber: '127015088',
+      cgpa: '8.54',
+      placementGoal: 'Placement Officer / Software Engineer',
+      profileCompleted: true,
+    },
+  });
+
+  console.log(`👑 Primary Admin seeded/verified: ${primaryAdmin.email} (Role: ${primaryAdmin.role}, Primary: ${primaryAdmin.isPrimaryAdmin})`);
+
   // Create default user
   const hashedPassword = await bcrypt.hash('sastra2026', 10);
   const user = await prisma.user.upsert({
@@ -170,7 +200,7 @@ async function seed() {
       batchYear: mockUser.batchYear,
       targetRole: mockUser.targetRole,
       cgpa: mockUser.cgpa,
-      role: 'student',
+      role: 'STUDENT',
     },
   });
 

@@ -16,10 +16,12 @@ model User {
   email        String    @unique
   googleId     String?   @unique
   passwordHash String?
-  role         String    @default("student") // "student" | "admin"
-  lastLoginAt  DateTime? @default(now())
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @default(now()) @updatedAt
+  role           String    @default("student") // "student" | "admin"
+  isPrimaryAdmin Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  lastLoginAt    DateTime? @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
 
   // Convenience flat fields for legacy compatibility
   name                 String?

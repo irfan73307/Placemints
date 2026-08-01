@@ -14,6 +14,7 @@ import { ROUTES } from '../constants/routes';
 import AppLayout from '../layouts/AppLayout';
 import AuthLayout from '../layouts/AuthLayout';
 import ProtectedRoute from './ProtectedRoute';
+import AdminRoute from './AdminRoute';
 
 // Pages
 import Landing from '../pages/Landing';
@@ -91,9 +92,24 @@ export const router = createBrowserRouter([
             path: ROUTES.SETTINGS,
             element: <Settings />,
           },
+        ],
+      },
+      // Dedicated RBAC Protected Admin Panel Routes
+      {
+        element: <AdminRoute />,
+        children: [
           {
-            path: '/admin/students',
-            element: <AdminStudents />,
+            element: <AppLayout />,
+            children: [
+              {
+                path: '/admin',
+                element: <AdminStudents />,
+              },
+              {
+                path: '/admin/students',
+                element: <AdminStudents />,
+              },
+            ],
           },
         ],
       },

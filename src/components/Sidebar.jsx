@@ -2,24 +2,33 @@
  * Sidebar Component
  * 
  * Persistent desktop & tablet navigation drawer.
- * Supports Dark Mode styling.
+ * Database-driven Role-Based Access Control (RBAC):
+ * - Students see ONLY Student navigation links.
+ * - Admins see Student navigation + Admin Panel button.
  */
 
 import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { LayoutDashboard, Building2, Bookmark, User, GraduationCap, Settings as SettingsIcon, ShieldAlert } from 'lucide-react';
 import { ROUTES } from '../constants/routes';
-
-const navItems = [
-  { name: 'Dashboard', path: ROUTES.DASHBOARD, icon: LayoutDashboard },
-  { name: 'Companies', path: ROUTES.COMPANIES, icon: Building2 },
-  { name: 'Library', path: ROUTES.LIBRARY, icon: Bookmark },
-  { name: 'Profile', path: ROUTES.PROFILE, icon: User },
-  { name: 'Admin Directory', path: '/admin/students', icon: ShieldAlert },
-  { name: 'Settings', path: ROUTES.SETTINGS, icon: SettingsIcon },
-];
+import { useAuth } from '../contexts/AuthContext';
 
 export function Sidebar() {
+  const { user } = useAuth();
+  const isAdmin = (user?.role || '').toUpperCase() === 'ADMIN';
+
+  const navItems = [
+    { name: 'Dashboard', path: ROUTES.DASHBOARD, icon: LayoutDashboard },
+    { name: 'Companies', path: ROUTES.COMPANIES, icon: Building2 },
+    { name: 'Library', path: ROUTES.LIBRARY, icon: Bookmark },
+    { name: 'Profile', path: ROUTES.PROFILE, icon: User },
+    { name: 'Settings', path: ROUTES.SETTINGS, icon: SettingsIcon },
+  ];
+
+  if (isAdmin) {
+    navItems.push({ name: 'Admin Panel', path: '/admin', icon: ShieldAlert });
+  }
+
   return (
     <aside className="hidden lg:flex flex-col w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-screen sticky top-0 select-none z-30 transition-colors">
       {/* Brand Header */}
