@@ -75,14 +75,14 @@ export function Register() {
   return (
     <div className="space-y-6">
       <div className="space-y-1.5 text-center">
-        <h2 className="text-xl font-bold text-slate-900">Create SASTRA Account</h2>
-        <p className="text-xs text-slate-500">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Create SASTRA Account</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Register with your official SASTRA University email (@sastra.ac.in).
         </p>
       </div>
 
       {errorMessage && (
-        <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2 animate-fadeIn">
+        <div className="p-3.5 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/60 rounded-xl text-xs text-red-700 dark:text-red-300 flex items-start gap-2 animate-fadeIn">
           <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
           <span>{errorMessage}</span>
         </div>
@@ -136,9 +136,9 @@ export function Register() {
         </Button>
       </form>
 
-      <div className="pt-2 text-center text-xs text-slate-500 border-t border-slate-100">
+      <div className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800">
         Already registered?{' '}
-        <Link to={ROUTES.LOGIN} className="font-bold text-brand-600 hover:text-brand-700">
+        <Link to={ROUTES.LOGIN} className="font-bold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300">
           Sign In
         </Link>
       </div>

@@ -91,14 +91,14 @@ export function Login() {
   return (
     <div className="space-y-6">
       <div className="space-y-1.5 text-center">
-        <h2 className="text-xl font-bold text-slate-900">Student Sign In</h2>
-        <p className="text-xs text-slate-500">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Student Sign In</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Access SASTRA University company selection rounds & PYQ database.
         </p>
       </div>
 
       {errorMessage && (
-        <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs font-semibold text-red-700 flex items-start gap-2 animate-fadeIn">
+        <div className="p-3.5 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/60 rounded-xl text-xs font-semibold text-red-700 dark:text-red-300 flex items-start gap-2 animate-fadeIn">
           <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
           <span>{errorMessage}</span>
         </div>
@@ -111,7 +111,7 @@ export function Login() {
           variant="secondary"
           size="lg"
           onClick={handleGoogleLogin}
-          className="w-full flex items-center justify-center gap-3 py-3 border-slate-300 hover:border-slate-400 bg-white font-semibold text-slate-700 shadow-card hover:shadow-md transition-all"
+          className="w-full flex items-center justify-center gap-3 py-3 border-slate-300 dark:border-slate-700 hover:border-slate-400 bg-white dark:bg-slate-800 font-semibold text-slate-700 dark:text-slate-200 shadow-card hover:shadow-md transition-all"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -137,8 +137,8 @@ export function Login() {
 
       {/* Divider */}
       <div className="relative flex items-center justify-center">
-        <div className="border-t border-slate-200 w-full" />
-        <span className="bg-white px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 absolute">
+        <div className="border-t border-slate-200 dark:border-slate-800 w-full" />
+        <span className="bg-white dark:bg-slate-900 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 absolute">
           OR
         </span>
       </div>
@@ -156,10 +156,10 @@ export function Login() {
 
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold text-slate-700">Password *</label>
+            <label className="text-xs font-bold text-slate-800 dark:text-slate-200 select-none">Password *</label>
             <Link
               to={ROUTES.FORGOT_PASSWORD}
-              className="text-xs font-semibold text-brand-600 hover:text-brand-700"
+              className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300"
             >
               Forgot password?
             </Link>
@@ -198,9 +198,9 @@ export function Login() {
       </form>
 
       {/* Footer Navigation */}
-      <div className="pt-2 text-center text-xs text-slate-500 border-t border-slate-100">
+      <div className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800">
         Don't have an account?{' '}
-        <Link to={ROUTES.REGISTER} className="font-bold text-brand-600 hover:text-brand-700">
+        <Link to={ROUTES.REGISTER} className="font-bold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300">
           Create Account
         </Link>
       </div>
