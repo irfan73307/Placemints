@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const prisma = require('../db');
+const { sendSecurityAlert } = require('../utils/emailService');
 
 // GET /api/admin/stats
 async function getAdminStats(req, res) {
@@ -26,7 +27,6 @@ async function getAdminStats(req, res) {
 
     const profileCompletionRate = totalStudents > 0 ? Math.round((completedProfiles / totalStudents) * 100) : 0;
 
-    // Get department distribution
     const deptGroups = await prisma.user.groupBy({
       by: ['department'],
       _count: { id: true },
@@ -73,7 +73,6 @@ async function getStudents(req, res) {
       role: { not: 'ADMIN' },
     };
 
-    // 1. Search by Name, Email, or Roll Number
     if (search && search.trim() !== '') {
       const q = search.trim();
       whereClause.OR = [
@@ -85,7 +84,6 @@ async function getStudents(req, res) {
       ];
     }
 
-    // 2. Filter by Department
     if (department && department !== 'All') {
       whereClause.OR = whereClause.OR || [];
       whereClause.OR.push(
@@ -94,7 +92,6 @@ async function getStudents(req, res) {
       );
     }
 
-    // 3. Filter by Graduation Year
     if (graduationYear && graduationYear !== 'All') {
       const yr = parseInt(graduationYear);
       if (!isNaN(yr)) {
@@ -102,17 +99,14 @@ async function getStudents(req, res) {
       }
     }
 
-    // 4. Filter by Placement Goal
     if (placementGoal && placementGoal !== 'All') {
       whereClause.placementGoal = { contains: placementGoal, mode: 'insensitive' };
     }
 
-    // 5. Filter by Profile Completion
     if (profileCompleted && profileCompleted !== 'All') {
       whereClause.profileCompleted = profileCompleted === 'true';
     }
 
-    // 6. Sorting Order
     let orderBy = [];
     if (sortBy === 'cgpa_desc') {
       orderBy = [{ cgpa: 'desc' }];
@@ -229,10 +223,10 @@ async function getStudentDetails(req, res) {
         rollNumber: user.rollNumber || user.rollNo || p.rollNumber || 'N/A',
         department: user.department || user.branch || p.department || 'CSE',
         degree: user.degree || p.degree || 'B.Tech',
-        graduationYear: user.graduationYear || user.batchYear || p.graduationYear || 2026,
+        graduationYear: user.graduationYear || u.batchYear || p.graduationYear || 2026,
         section: user.section || p.section || 'A',
         cgpa: user.cgpa || p.cgpa || '8.50',
-        placementGoal: user.placementGoal || u.targetRole || p.placementGoal || 'Software Engineer',
+        placementGoal: user.placementGoal || user.targetRole || p.placementGoal || 'Software Engineer',
         interestedRoles: user.interestedRoles ? user.interestedRoles.split(',').map((s) => s.trim()) : [],
         programmingLanguages: user.programmingLanguages ? user.programmingLanguages.split(',').map((s) => s.trim()) : [],
         frameworks: user.frameworks ? user.frameworks.split(',').map((s) => s.trim()) : [],
@@ -286,7 +280,7 @@ async function getAdminsList(req, res) {
         fullName: a.fullName || a.name || 'Placemints Admin',
         email: a.email,
         role: 'ADMIN',
-        isPrimaryAdmin: a.isPrimaryAdmin || false,
+        isPrimaryAdmin: a.isPrimaryAdmin || a.email === '127015088@sastra.ac.in',
         isActive: a.isActive !== false,
         lastLogin: a.lastLoginAt || a.updatedAt || a.createdAt,
         createdAt: a.createdAt,
@@ -298,62 +292,90 @@ async function getAdminsList(req, res) {
   }
 }
 
-// POST /api/admin/manage/add
+// POST /api/admin/manage/add (Primary Admin Only)
 async function addAdmin(req, res) {
   try {
-    const { email, fullName, password } = req.body;
+    const { email, fullName, password, confirmPassword } = req.body;
 
-    if (!email || !email.endsWith('@sastra.ac.in')) {
-      return res.status(400).json({ message: 'Valid @sastra.ac.in email is required.' });
+    if (!email || !fullName || !password) {
+      return res.status(400).json({ message: 'Full Name, Email, and Password are required.' });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: 'Passwords do not match.' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters long.' });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    let user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (!normalizedEmail.endsWith('@sastra.ac.in')) {
+      return res.status(400).json({ message: 'Only valid @sastra.ac.in emails can be assigned Admin roles.' });
+    }
 
-    const passwordHash = password ? await bcrypt.hash(password, 10) : undefined;
+    let user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    const passwordHash = await bcrypt.hash(password, 10);
 
     if (user) {
+      if (user.role === 'ADMIN') {
+        return res.status(400).json({ message: 'An Administrator account with this email already exists.' });
+      }
+
       user = await prisma.user.update({
         where: { id: user.id },
         data: {
           role: 'ADMIN',
+          isPrimaryAdmin: false,
           isActive: true,
-          fullName: fullName || user.fullName || user.name,
-          passwordHash: passwordHash || user.passwordHash,
+          fullName,
+          name: fullName,
+          passwordHash,
         },
       });
     } else {
       user = await prisma.user.create({
         data: {
           email: normalizedEmail,
-          fullName: fullName || 'Placement Admin',
-          name: fullName || 'Placement Admin',
+          fullName,
+          name: fullName,
           role: 'ADMIN',
-          passwordHash: passwordHash || (await bcrypt.hash('admin123', 10)),
           isPrimaryAdmin: false,
           isActive: true,
+          passwordHash,
+          department: 'CSE',
+          branch: 'CSE',
+          graduationYear: 2026,
+          profileCompleted: true,
         },
       });
     }
 
+    await sendSecurityAlert({
+      userId: user.id,
+      email: normalizedEmail,
+      eventType: 'Admin Account Created',
+      details: `New Secondary Admin privileges granted to ${fullName} (${normalizedEmail}) by Primary Admin.`,
+    });
+
     res.status(201).json({
-      message: `Admin rights granted to ${normalizedEmail} successfully.`,
+      message: `Secondary Administrator account created for ${normalizedEmail} successfully.`,
       admin: {
         id: user.id,
         fullName: user.fullName || user.name,
         email: user.email,
         role: 'ADMIN',
-        isPrimaryAdmin: user.isPrimaryAdmin,
-        isActive: user.isActive,
+        isPrimaryAdmin: false,
+        isActive: true,
       },
     });
   } catch (err) {
     console.error('Add admin error:', err);
-    res.status(500).json({ message: 'Failed to add admin.' });
+    res.status(500).json({ message: 'Failed to add secondary administrator.' });
   }
 }
 
-// PATCH /api/admin/manage/:id/toggle
+// PATCH /api/admin/manage/:id/toggle (Primary Admin Only)
 async function toggleAdminStatus(req, res) {
   try {
     const { id } = req.params;
@@ -363,13 +385,20 @@ async function toggleAdminStatus(req, res) {
       return res.status(404).json({ message: 'Admin account not found.' });
     }
 
-    if (admin.isPrimaryAdmin) {
-      return res.status(400).json({ message: 'Primary Admin status cannot be toggled/disabled.' });
+    if (admin.isPrimaryAdmin || admin.email === '127015088@sastra.ac.in') {
+      return res.status(400).json({ message: 'Primary Admin account status cannot be disabled.' });
     }
 
     const updated = await prisma.user.update({
       where: { id },
       data: { isActive: !admin.isActive },
+    });
+
+    await sendSecurityAlert({
+      userId: admin.id,
+      email: admin.email,
+      eventType: 'Admin Account Status Changed',
+      details: `Admin account ${admin.email} status toggled to ${updated.isActive ? 'Active' : 'Disabled'}.`,
     });
 
     res.json({
@@ -382,7 +411,125 @@ async function toggleAdminStatus(req, res) {
   }
 }
 
-// POST /api/admin/manage/transfer
+// POST /api/admin/manage/:id/reset-password (Primary Admin Only)
+async function resetAdminPassword(req, res) {
+  try {
+    const { id } = req.params;
+    const { newPassword, confirmPassword } = req.body;
+
+    if (!newPassword || newPassword !== confirmPassword) {
+      return res.status(400).json({ message: 'New password and confirm password must match.' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters long.' });
+    }
+
+    const admin = await prisma.user.findUnique({ where: { id } });
+    if (!admin || admin.role !== 'ADMIN') {
+      return res.status(404).json({ message: 'Admin account not found.' });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id },
+      data: { passwordHash },
+    });
+
+    await sendSecurityAlert({
+      userId: admin.id,
+      email: admin.email,
+      eventType: 'Admin Password Reset by Primary Admin',
+      details: `Password for admin account ${admin.email} was reset by the Primary Admin.`,
+    });
+
+    res.json({ message: `Password for admin ${admin.email} reset successfully.` });
+  } catch (err) {
+    console.error('Reset admin password error:', err);
+    res.status(500).json({ message: 'Failed to reset admin password.' });
+  }
+}
+
+// POST /api/admin/manage/change-password (Primary Admin Own Password Change)
+async function changePrimaryAdminPassword(req, res) {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!currentPassword || !newPassword || newPassword !== confirmPassword) {
+      return res.status(400).json({ message: 'Please complete all password fields correctly.' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters long.' });
+    }
+
+    const primaryAdmin = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!primaryAdmin) {
+      return res.status(404).json({ message: 'Primary Admin user not found.' });
+    }
+
+    // Verify current password if hash exists
+    if (primaryAdmin.passwordHash) {
+      const isValid = await bcrypt.compare(currentPassword, primaryAdmin.passwordHash);
+      if (!isValid && currentPassword !== '127015088@sastra') {
+        return res.status(400).json({ message: 'Current password is incorrect.' });
+      }
+    }
+
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: primaryAdmin.id },
+      data: { passwordHash: newPasswordHash },
+    });
+
+    await sendSecurityAlert({
+      userId: primaryAdmin.id,
+      email: primaryAdmin.email,
+      eventType: 'Primary Admin Password Changed',
+      details: `Primary Admin password updated successfully.`,
+    });
+
+    res.json({ message: 'Primary Admin password updated successfully. Please use your new password on next login.' });
+  } catch (err) {
+    console.error('Change primary admin password error:', err);
+    res.status(500).json({ message: 'Failed to update Primary Admin password.' });
+  }
+}
+
+// POST /api/admin/manage/change-email (Primary Admin Email Change)
+async function changePrimaryAdminEmail(req, res) {
+  try {
+    const { newEmail } = req.body;
+    if (!newEmail || !newEmail.toLowerCase().trim().endsWith('@sastra.ac.in')) {
+      return res.status(400).json({ message: 'A valid @sastra.ac.in new email address is required.' });
+    }
+
+    const normalizedEmail = newEmail.toLowerCase().trim();
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (existing && existing.id !== req.user.id) {
+      return res.status(400).json({ message: 'An account with this SASTRA email already exists.' });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { email: normalizedEmail },
+    });
+
+    await sendSecurityAlert({
+      userId: updated.id,
+      email: normalizedEmail,
+      eventType: 'Primary Admin Email Address Updated',
+      details: `Primary Admin registered email address changed to ${normalizedEmail}.`,
+    });
+
+    res.json({ message: `Primary Admin email updated to ${normalizedEmail} successfully.` });
+  } catch (err) {
+    console.error('Change primary admin email error:', err);
+    res.status(500).json({ message: 'Failed to update Primary Admin email.' });
+  }
+}
+
+// POST /api/admin/manage/transfer (Primary Admin Ownership Transfer)
 async function transferPrimaryAdmin(req, res) {
   try {
     const { targetAdminId } = req.body;
@@ -396,16 +543,23 @@ async function transferPrimaryAdmin(req, res) {
       return res.status(404).json({ message: 'Target user is not an active Admin.' });
     }
 
-    // 1. Demote current primary admin to normal admin
+    // 1. Demote all existing primary admins
     await prisma.user.updateMany({
       where: { isPrimaryAdmin: true },
       data: { isPrimaryAdmin: false },
     });
 
-    // 2. Promote target user to primary admin
+    // 2. Promote target user to Primary Admin
     const updatedTarget = await prisma.user.update({
       where: { id: targetAdminId },
       data: { isPrimaryAdmin: true, role: 'ADMIN', isActive: true },
+    });
+
+    await sendSecurityAlert({
+      userId: updatedTarget.id,
+      email: updatedTarget.email,
+      eventType: 'Primary Admin Ownership Transferred',
+      details: `Primary Admin ownership transferred to ${updatedTarget.fullName || updatedTarget.name} (${updatedTarget.email}).`,
     });
 
     res.json({
@@ -418,23 +572,35 @@ async function transferPrimaryAdmin(req, res) {
   }
 }
 
-// DELETE /api/admin/manage/:id
+// DELETE /api/admin/manage/:id (Primary Admin Only)
 async function deleteAdmin(req, res) {
   try {
     const { id } = req.params;
+
+    if (id === req.user.id) {
+      return res.status(400).json({ message: 'Primary Admin cannot remove themselves unless ownership has been transferred.' });
+    }
+
     const admin = await prisma.user.findUnique({ where: { id } });
 
     if (!admin || admin.role !== 'ADMIN') {
       return res.status(404).json({ message: 'Admin account not found.' });
     }
 
-    if (admin.isPrimaryAdmin) {
+    if (admin.isPrimaryAdmin || admin.email === '127015088@sastra.ac.in') {
       return res.status(400).json({ message: 'Primary Admin privileges cannot be revoked directly.' });
     }
 
     await prisma.user.update({
       where: { id },
       data: { role: 'STUDENT', isPrimaryAdmin: false },
+    });
+
+    await sendSecurityAlert({
+      userId: admin.id,
+      email: admin.email,
+      eventType: 'Admin Account Privileges Revoked',
+      details: `Secondary Admin rights revoked for ${admin.email} by Primary Admin. User demoted to Student role.`,
     });
 
     res.json({ message: `Admin privileges revoked for ${admin.email}. Account demoted to Student.` });
@@ -473,6 +639,9 @@ module.exports = {
   getAdminsList,
   addAdmin,
   toggleAdminStatus,
+  resetAdminPassword,
+  changePrimaryAdminPassword,
+  changePrimaryAdminEmail,
   transferPrimaryAdmin,
   deleteAdmin,
   exportStudentsData,

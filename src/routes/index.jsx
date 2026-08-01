@@ -29,6 +29,7 @@ import Library from '../pages/Library';
 import Profile from '../pages/Profile';
 import Settings from '../pages/Settings';
 import AdminStudents from '../pages/AdminStudents';
+import AdminSettings from '../pages/AdminSettings';
 import NotFound from '../pages/NotFound';
 
 export const router = createBrowserRouter([
@@ -108,6 +109,10 @@ export const router = createBrowserRouter([
               {
                 path: '/admin/students',
                 element: <AdminStudents />,
+              },
+              {
+                path: '/admin/settings',
+                element: <AdminSettings />,
               },
             ],
           },
