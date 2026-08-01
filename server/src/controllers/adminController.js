@@ -632,6 +632,108 @@ async function exportStudentsData(req, res) {
   }
 }
 
+// POST /api/admin/companies/:id/refresh-logo
+async function refreshCompanyLogo(req, res) {
+  try {
+    const { id } = req.params;
+    const company = await prisma.company.findFirst({
+      where: { OR: [{ id }, { slug: id }] },
+    });
+
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found.' });
+    }
+
+    const { fetchOfficialLogo } = require('../utils/logoFetcher');
+    const officialLogo = await fetchOfficialLogo(company.name, company.website);
+
+    const updated = await prisma.company.update({
+      where: { id: company.id },
+      data: {
+        logo: officialLogo || company.logoUrl || null,
+        logoUrl: officialLogo || company.logoUrl || null,
+      },
+    });
+
+    res.json({
+      message: `Logo refreshed for ${company.name}`,
+      logo: updated.logo,
+      company: updated,
+    });
+  } catch (err) {
+    console.error('Refresh logo error:', err);
+    res.status(500).json({ message: 'Failed to refresh company logo.' });
+  }
+}
+
+// PATCH /api/admin/companies/:id/custom-logo
+async function setCustomCompanyLogo(req, res) {
+  try {
+    const { id } = req.params;
+    const { customLogoUrl } = req.body;
+
+    if (!customLogoUrl || typeof customLogoUrl !== 'string' || !customLogoUrl.startsWith('http')) {
+      return res.status(400).json({ message: 'Valid image URL is required.' });
+    }
+
+    const company = await prisma.company.findFirst({
+      where: { OR: [{ id }, { slug: id }] },
+    });
+
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found.' });
+    }
+
+    const updated = await prisma.company.update({
+      where: { id: company.id },
+      data: {
+        customLogo: customLogoUrl.trim(),
+        logo: customLogoUrl.trim(),
+      },
+    });
+
+    res.json({
+      message: `Custom logo updated for ${company.name}`,
+      customLogo: updated.customLogo,
+      logo: updated.logo,
+      company: updated,
+    });
+  } catch (err) {
+    console.error('Custom logo error:', err);
+    res.status(500).json({ message: 'Failed to update custom logo.' });
+  }
+}
+
+// DELETE /api/admin/companies/:id/custom-logo
+async function removeCustomCompanyLogo(req, res) {
+  try {
+    const { id } = req.params;
+    const company = await prisma.company.findFirst({
+      where: { OR: [{ id }, { slug: id }] },
+    });
+
+    if (!company) {
+      return res.status(404).json({ message: 'Company not found.' });
+    }
+
+    const updated = await prisma.company.update({
+      where: { id: company.id },
+      data: {
+        customLogo: null,
+      },
+    });
+
+    res.json({
+      message: `Custom logo removed for ${company.name}`,
+      logo: updated.logo || updated.logoUrl,
+      company: updated,
+    });
+  } catch (err) {
+    console.error('Remove custom logo error:', err);
+    res.status(500).json({ message: 'Failed to remove custom logo.' });
+  }
+}
+
 module.exports = {
   getAdminStats,
   getStudents,
@@ -645,4 +747,7 @@ module.exports = {
   transferPrimaryAdmin,
   deleteAdmin,
   exportStudentsData,
+  refreshCompanyLogo,
+  setCustomCompanyLogo,
+  removeCustomCompanyLogo,
 };

@@ -198,7 +198,10 @@ model Company {
   id          String   @id @default(uuid())
   slug        String   @unique
   name        String
-  logoUrl     String
+  logo        String?  // Database-stored official logo URL
+  logoUrl     String?  // Secondary logo URL
+  customLogo  String?  // Admin uploaded custom logo URL (highest priority)
+  website     String?  // Company official website domain
   tier        String?
   ctc         String?
   avgCtc      Float?   @default(0.0)

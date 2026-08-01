@@ -3,18 +3,21 @@ import React, { useState } from 'react';
 /**
  * CompanyLogo Component
  * 
- * Renders official company logo with smooth, automatic fallback handling.
- * Prevents broken image icons ([x]) throughout the application.
+ * Scalable Database-Driven Company Logo Component:
+ * - Prioritizes customLogo -> logo -> logoUrl
+ * - Displays circular fallback avatar with bold letter if logo is NULL or image fails to load.
+ * - Prevents broken image icons ([x]) throughout the application.
  */
-export function CompanyLogo({ logoUrl, name = 'Company', size = 'md', className = '' }) {
+export function CompanyLogo({ customLogo, logo, logoUrl, name = 'Company', size = 'md', className = '' }) {
   const [imageError, setImageError] = useState(false);
 
+  const activeLogo = customLogo || logo || logoUrl;
   const initial = name ? name.trim().charAt(0).toUpperCase() : 'C';
 
   // Size dimensions
   const sizeClasses = {
-    xs: 'w-6 h-6 text-[10px]',
-    sm: 'w-8 h-8 text-xs',
+    xs: 'w-7 h-7 text-xs',
+    sm: 'w-9 h-9 text-xs',
     md: 'w-11 h-11 text-sm',
     lg: 'w-14 h-14 text-base',
     xl: 'w-20 h-20 text-xl',
@@ -22,11 +25,11 @@ export function CompanyLogo({ logoUrl, name = 'Company', size = 'md', className 
 
   const currentSizeClass = sizeClasses[size] || sizeClasses.md;
 
-  // Clean fallback SVG badge if image fails or logoUrl is missing
-  if (imageError || !logoUrl || logoUrl.trim() === '') {
+  // Circular fallback avatar if image fails or logo is missing
+  if (imageError || !activeLogo || activeLogo.trim() === '') {
     return (
       <div
-        className={`${currentSizeClass} rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-brand-700 text-white font-extrabold flex items-center justify-center shadow-sm shrink-0 border border-white/20 select-none ${className}`}
+        className={`${currentSizeClass} rounded-full bg-gradient-to-tr from-brand-700 via-brand-600 to-indigo-500 text-white font-extrabold flex items-center justify-center shadow-sm shrink-0 border border-white/20 select-none ${className}`}
         title={name}
       >
         <span>{initial}</span>
@@ -35,9 +38,9 @@ export function CompanyLogo({ logoUrl, name = 'Company', size = 'md', className 
   }
 
   return (
-    <div className={`${currentSizeClass} rounded-xl bg-white dark:bg-slate-800 p-1 border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex items-center justify-center shrink-0 overflow-hidden ${className}`}>
+    <div className={`${currentSizeClass} rounded-xl bg-white p-1 border border-slate-200 shadow-sm flex items-center justify-center shrink-0 overflow-hidden ${className}`}>
       <img
-        src={logoUrl}
+        src={activeLogo}
         alt={name}
         onError={() => setImageError(true)}
         className="w-full h-full object-contain"
