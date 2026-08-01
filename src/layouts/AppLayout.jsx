@@ -20,7 +20,7 @@ export function AppLayout() {
       <Sidebar />
 
       {/* Main Content Area Container */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen lg:pl-64">
         {/* Top Header */}
         <Header />
 

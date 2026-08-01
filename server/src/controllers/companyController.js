@@ -117,7 +117,17 @@ async function getCompanyById(req, res) {
       },
     });
 
-    const allPyqs = company.questions.map((q, idx) => {
+    // Deduplicate questions by text
+    const uniqueQuestionsMap = new Map();
+    (company.questions || []).forEach((q) => {
+      const qKey = (q.questionText || '').trim().toLowerCase();
+      if (!uniqueQuestionsMap.has(qKey)) {
+        uniqueQuestionsMap.set(qKey, q);
+      }
+    });
+    const uniqueQuestions = Array.from(uniqueQuestionsMap.values());
+
+    const allPyqs = uniqueQuestions.map((q, idx) => {
       const titleSlug = q.questionText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       const frequencyVal = q.likeCount || (95 - (idx * 3));
       const starRating = getStarRating(frequencyVal);
@@ -148,6 +158,22 @@ async function getCompanyById(req, res) {
     const sastraQuestions = allPyqs.slice(0, 6);
     const generalQuestions = allPyqs.slice(6);
 
+    // Deduplicate rounds cleanly
+    const uniqueRoundsList = [];
+    const seenRoundKeys = new Set();
+    (company.rounds || []).forEach((r) => {
+      let cleanTitle = r.title.replace(/^(Round\s*\d+\s*:\s*)+/i, '').trim();
+      const key = cleanTitle.toLowerCase();
+      if (!seenRoundKeys.has(key)) {
+        seenRoundKeys.add(key);
+        uniqueRoundsList.push({
+          id: r.id,
+          title: `Round ${uniqueRoundsList.length + 1}: ${cleanTitle}`,
+          description: r.description,
+        });
+      }
+    });
+
     const formattedCompany = {
       id: company.id,
       slug: company.slug,
@@ -169,11 +195,7 @@ async function getCompanyById(req, res) {
         'Practice SQL queries using CTEs, JOINs, and window functions.',
       ],
       frequentlyAskedTopics: ['Dynamic Programming', 'Trees & Binary Search Trees', 'Graph Topological Sort', 'System Design (LLD)', 'SQL Queries'],
-      rounds: company.rounds.map((r) => ({
-        id: r.id,
-        title: r.title,
-        description: r.description,
-      })),
+      rounds: uniqueRoundsList,
       sastraQuestions,
       generalQuestions,
       pyqs: allPyqs,

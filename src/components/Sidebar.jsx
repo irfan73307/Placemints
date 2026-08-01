@@ -31,7 +31,7 @@ export function Sidebar() {
   ] : [];
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 border-r border-slate-200 bg-white h-screen sticky top-0 select-none z-30 font-sans transition-colors">
+    <aside className="hidden lg:flex flex-col w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-screen fixed top-0 left-0 bottom-0 select-none z-40 font-sans transition-colors">
       {/* Brand Header */}
       <Link to={ROUTES.HOME} className="h-16 flex items-center px-5 border-b border-slate-200 gap-3 hover:opacity-90 transition-opacity">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-700 via-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-sm shrink-0">

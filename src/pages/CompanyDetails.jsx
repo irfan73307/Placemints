@@ -82,6 +82,25 @@ export function CompanyDetails() {
     }
   };
 
+  const cleanRounds = React.useMemo(() => {
+    if (!company || !company.rounds || !Array.isArray(company.rounds)) return [];
+    const unique = [];
+    const seen = new Set();
+    company.rounds.forEach((r) => {
+      let title = r.title || `Round ${r.roundNumber || ''}`;
+      let cleanTitle = title.replace(/^(Round\s*\d+\s*:\s*)+/i, '').trim();
+      const key = cleanTitle.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push({
+          ...r,
+          displayTitle: cleanTitle.toLowerCase().startsWith('round') ? cleanTitle : `Round ${unique.length + 1}: ${cleanTitle}`,
+        });
+      }
+    });
+    return unique;
+  }, [company]);
+
   if (isLoading) {
     return (
       <div className="py-20 text-center space-y-3">
@@ -217,7 +236,7 @@ export function CompanyDetails() {
               : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          Interview Rounds ({company.rounds ? company.rounds.length : 0})
+          Interview Rounds ({cleanRounds.length})
         </button>
         <button
           onClick={() => setActiveTab('pyqs')}
@@ -294,14 +313,14 @@ export function CompanyDetails() {
       {/* TAB 2: Interview Rounds */}
       {activeTab === 'rounds' && (
         <div className="space-y-4">
-          {company.rounds && company.rounds.length > 0 ? (
-            company.rounds.map((round, idx) => (
-              <div key={round.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-card space-y-2">
+          {cleanRounds.length > 0 ? (
+            cleanRounds.map((round, idx) => (
+              <div key={round.id || idx} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-card space-y-2">
                 <div className="flex items-center gap-3">
                   <span className="w-7 h-7 rounded-full bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-300 font-extrabold text-xs flex items-center justify-center border border-brand-200 dark:border-brand-800">
                     {idx + 1}
                   </span>
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">{round.title}</h3>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">{round.displayTitle}</h3>
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed pl-10">{round.description}</p>
               </div>
