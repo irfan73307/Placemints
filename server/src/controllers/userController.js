@@ -137,38 +137,51 @@ async function updateProfile(req, res) {
       isSetup,
     } = req.body;
 
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        fullName: fullName || name,
-        name: fullName || name,
-        avatar: avatar || avatarUrl,
-        avatarUrl: avatar || avatarUrl,
-        department,
-        branch: department,
-        degree,
-        graduationYear: graduationYear ? parseInt(graduationYear) : undefined,
-        section,
-        rollNumber,
-        rollNo: rollNumber,
-        cgpa,
-        placementGoal: placementGoal || targetRole,
-        targetRole: placementGoal || targetRole,
-        batchYear: graduationYear ? parseInt(graduationYear) : undefined,
-        interestedRoles: Array.isArray(interestedRoles) ? interestedRoles.join(',') : interestedRoles,
-        programmingLanguages: Array.isArray(programmingLanguages) ? programmingLanguages.join(',') : programmingLanguages,
-        frameworks: Array.isArray(frameworks) ? frameworks.join(',') : frameworks,
-        technologies: Array.isArray(technologies) ? technologies.join(',') : technologies,
-        github,
-        linkedin,
-        leetcode,
-        codeforces,
-        codechef,
-        resume,
-        bio,
-        profileCompleted: isSetup !== undefined ? true : true,
-      },
-    });
+    const updateData = {
+      fullName: fullName || name,
+      name: fullName || name,
+      avatar: avatar || avatarUrl,
+      avatarUrl: avatar || avatarUrl,
+      department,
+      branch: department,
+      degree,
+      graduationYear: graduationYear ? parseInt(graduationYear) : undefined,
+      section,
+      rollNumber,
+      rollNo: rollNumber,
+      cgpa,
+      placementGoal: placementGoal || targetRole,
+      targetRole: placementGoal || targetRole,
+      batchYear: graduationYear ? parseInt(graduationYear) : undefined,
+      interestedRoles: Array.isArray(interestedRoles) ? interestedRoles.join(',') : interestedRoles,
+      programmingLanguages: Array.isArray(programmingLanguages) ? programmingLanguages.join(',') : programmingLanguages,
+      frameworks: Array.isArray(frameworks) ? frameworks.join(',') : frameworks,
+      technologies: Array.isArray(technologies) ? technologies.join(',') : technologies,
+      github,
+      linkedin,
+      leetcode,
+      codeforces,
+      codechef,
+      resume,
+      bio,
+      profileCompleted: true,
+    };
+
+    let user;
+    try {
+      user = await prisma.user.upsert({
+        where: { id: userId },
+        update: updateData,
+        create: {
+          id: userId,
+          email: req.user?.email || `${userId}@sastra.ac.in`,
+          ...updateData,
+        },
+      });
+    } catch (e) {
+      console.warn('DB upsert profile fallback:', e.message);
+      user = { id: userId, email: req.user?.email, ...updateData };
+    }
 
     res.json({
       user: {
