@@ -20,12 +20,10 @@ import { useLibrary } from '../contexts/LibraryContext';
 import { getCompanies } from '../services/companyService';
 import { calculateProfileCompletion } from '../utils/profileCompletion';
 import { getFormattedDepartment } from '../utils/departmentUtils';
-import { ROUTES } from '../constants/routes';
 import { 
   Sparkles, 
   Target, 
   Bookmark, 
-  Search, 
   ArrowRight, 
   TrendingUp,
   CheckCircle2,
@@ -44,7 +42,6 @@ export function Dashboard() {
   const { savedCompanies, toggleSaveCompany, isCompanySaved } = useLibrary();
   const navigate = useNavigate();
 
-  const [searchQuery, setSearchQuery] = useState('');
   const [topCompanies, setTopCompanies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -68,13 +65,6 @@ export function Dashboard() {
 
   const completion = calculateProfileCompletion(user);
   const formattedDept = getFormattedDepartment(user?.department || user?.branch);
-
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`${ROUTES.COMPANIES}?search=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
 
   // Checklist items completion status
   const checklistItems = [
@@ -130,30 +120,10 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* 2. Main Content Grid: Search, Recruiters & Profile Checklist */}
+      {/* 2. Main Content Grid: Recruiters & Profile Checklist */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left 2 Columns: Search, Saved Companies & Top Recruiters */}
+        {/* Left 2 Columns: Saved Companies & Top Recruiters */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Quick Search */}
-          <form onSubmit={handleSearchSubmit} className="relative">
-            <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search target companies (Google, TCS, Zoho, Amazon), PYQs, or topics..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-28 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm shadow-subtle placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 transition-all font-medium"
-            />
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-brand-600 hover:bg-brand-700 shadow-sm"
-            >
-              Search
-            </Button>
-          </form>
-
           {/* Quick Action Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Link

@@ -9,7 +9,7 @@
  * Used on Companies page and global header to trigger filtered API searches (e.g. GET /api/companies?q=query).
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, X } from 'lucide-react';
 import { cn } from '../utils/cn';
 
@@ -21,20 +21,29 @@ export function SearchBar({
   initialValue = '',
 }) {
   const [query, setQuery] = useState(initialValue);
+  const onSearchRef = useRef(onSearch);
+
+  useEffect(() => {
+    onSearchRef.current = onSearch;
+  }, [onSearch]);
+
+  useEffect(() => {
+    setQuery(initialValue);
+  }, [initialValue]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      if (onSearch) {
-        onSearch(query);
+      if (onSearchRef.current) {
+        onSearchRef.current(query);
       }
     }, debounceMs);
 
     return () => clearTimeout(handler);
-  }, [query, debounceMs, onSearch]);
+  }, [query, debounceMs]);
 
   const handleClear = () => {
     setQuery('');
-    if (onSearch) onSearch('');
+    if (onSearchRef.current) onSearchRef.current('');
   };
 
   return (

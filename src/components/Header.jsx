@@ -7,8 +7,8 @@
  */
 
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Bell, GraduationCap, Search, CheckCircle2, Calendar, FileText, X, Sun, Moon } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Bell, GraduationCap, CheckCircle2, Calendar, FileText, X, Sun, Moon } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -18,9 +18,7 @@ import { ROUTES } from '../constants/routes';
 export function Header() {
   const { user } = useAuth();
   const { isDark, toggleTheme } = useTheme();
-  const navigate = useNavigate();
 
-  const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
 
   const notifications = [
@@ -50,39 +48,17 @@ export function Header() {
     },
   ];
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/companies?search=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
-
   const deptInfo = getFormattedDepartment(user?.department || user?.branch);
 
   return (
     <header className="sticky top-0 z-20 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 lg:px-8 flex items-center justify-between transition-colors font-sans">
-      {/* Mobile Brand Title */}
-      <Link to={ROUTES.HOME} className="flex items-center gap-2.5 lg:hidden hover:opacity-90 transition-opacity">
+      {/* Mobile & Desktop Brand Title */}
+      <Link to={ROUTES.HOME} className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
         <div className="w-8 h-8 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-sm">
           <GraduationCap className="w-4 h-4" />
         </div>
         <span className="font-extrabold text-slate-900 dark:text-white text-base tracking-tight">Placemints</span>
       </Link>
-
-      {/* Desktop Global Search Bar */}
-      <form onSubmit={handleSearchSubmit} className="hidden sm:flex items-center flex-1 max-w-md relative">
-        <Search className="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search companies, topics, or PYQs... (Press Enter)"
-          className="w-full pl-10 pr-10 py-2 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 transition-all font-medium"
-        />
-        <kbd className="absolute right-3 hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md">
-          /
-        </kbd>
-      </form>
 
       {/* Actions & Profile */}
       <div className="flex items-center gap-2 sm:gap-3">

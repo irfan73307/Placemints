@@ -29,22 +29,22 @@ const FILTER_TAGS = [
 
 export function Companies() {
   const { toggleSaveCompany, isCompanySaved } = useLibrary();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const initialQuery = searchParams.get('search') || '';
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const urlQuery = searchParams.get('search') || '';
+  const [searchQuery, setSearchQuery] = useState(urlQuery);
   const [selectedTag, setSelectedTag] = useState('All');
   const [companies, setCompanies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Sync state if URL search param changes
   useEffect(() => {
-    const q = searchParams.get('search') || '';
-    setSearchQuery(q);
-  }, [searchParams]);
+    setSearchQuery(urlQuery);
+  }, [urlQuery]);
 
-  const fetchCompanies = useCallback(async (query, tag) => {
-    setIsLoading(true);
+  const fetchCompanies = useCallback(async (query, tag, showSkeleton = false) => {
+    if (showSkeleton) setIsLoading(true);
     setError(null);
     try {
       const activeTag = tag === 'All' ? '' : tag;
@@ -58,41 +58,56 @@ export function Companies() {
   }, []);
 
   useEffect(() => {
-    fetchCompanies(searchQuery, selectedTag);
+    fetchCompanies(searchQuery, selectedTag, companies.length === 0);
   }, [searchQuery, selectedTag, fetchCompanies]);
 
-  const handleSearch = (q) => {
+  const handleSearch = useCallback((q) => {
     setSearchQuery(q);
-  };
+    if (q.trim()) {
+      setSearchParams({ search: q.trim() }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  }, [setSearchParams]);
 
   const handleTagClick = (tag) => {
     setSelectedTag(tag);
   };
 
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setSelectedTag('All');
+    setSearchParams({}, { replace: true });
+  };
+
   return (
     <div className="space-y-6 animate-fadeIn font-sans pb-12">
       {/* Header Info */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Recruiting Companies Archive</h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Recruiting Companies Archive</h1>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
             Explore 246+ campus recruiters visiting SASTRA, selection processes, CTC offers, and past question archives.
           </p>
         </div>
 
-        <div className="text-xs font-extrabold text-brand-700 bg-brand-50 px-3.5 py-1.5 rounded-full border border-brand-200/80 w-fit shrink-0">
+        <div className="text-xs font-extrabold text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-950 px-3.5 py-1.5 rounded-full border border-brand-200/80 dark:border-brand-800 w-fit shrink-0">
           {companies.length} Companies Archived
         </div>
       </div>
 
       {/* Search & Filters Card */}
-      <div className="space-y-3.5 bg-white p-5 rounded-2xl border border-slate-200 shadow-card">
-        <SearchBar onSearch={handleSearch} placeholder="Search by company name (Google, TCS, Zoho), tag, or technology stack..." />
+      <div className="space-y-3.5 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-card">
+        <SearchBar 
+          onSearch={handleSearch} 
+          initialValue={searchQuery}
+          placeholder="Search by company name (Google, TCS, Zoho), tag, or technology stack..." 
+        />
 
         {/* Filter Badges */}
         <div className="flex items-center gap-2 overflow-x-auto pt-1 pb-1 no-scrollbar select-none">
           <span className="text-xs font-bold text-slate-400 flex items-center gap-1 shrink-0 mr-1 uppercase tracking-wider text-[10px]">
-            <Filter className="w-3.5 h-3.5 text-brand-600" />
+            <Filter className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" />
             Filter By:
           </span>
           {FILTER_TAGS.map((tag) => {
@@ -104,7 +119,7 @@ export function Companies() {
                 isInteractive
                 onClick={() => handleTagClick(tag)}
                 className={`shrink-0 py-1 px-3.5 text-xs ${
-                  isSelected ? 'bg-brand-600 text-white font-bold border-transparent shadow-sm' : 'hover:bg-slate-100 hover:text-slate-900'
+                  isSelected ? 'bg-brand-600 text-white font-bold border-transparent shadow-sm' : 'hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 {tag}
@@ -140,10 +155,7 @@ export function Companies() {
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedTag('All');
-              }}
+              onClick={handleClearFilters}
             >
               Clear Search Filters
             </Button>
