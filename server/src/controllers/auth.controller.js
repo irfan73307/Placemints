@@ -23,6 +23,7 @@ async function googleCallback(req, res) {
   if (!clientUrl || clientUrl === '*' || clientUrl.includes('localhost')) {
     clientUrl = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null) || 'https://placemints.vercel.app';
   }
+  clientUrl = clientUrl.replace(/\/+$/, '');
   try {
     const { code } = req.query;
 
