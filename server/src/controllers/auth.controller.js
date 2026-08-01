@@ -9,7 +9,16 @@ const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || 'http://localhost
 // GET /auth/google
 function googleLogin(req, res) {
   const scope = encodeURIComponent('email profile');
-  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(GOOGLE_CALLBACK_URL)}&response_type=code&scope=${scope}&prompt=select_account`;
+  const host = req.get('host');
+  const protocol = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+  
+  let callbackUrl = process.env.GOOGLE_CALLBACK_URL;
+  if (!callbackUrl || callbackUrl.includes('localhost')) {
+    callbackUrl = `${protocol}://${host}/auth/google/callback`;
+  }
+
+  const clientId = process.env.GOOGLE_CLIENT_ID || '356564172947-2585e4bhckjaqr9g3fike1drlusks9aq.apps.googleusercontent.com';
+  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=${scope}&prompt=select_account`;
   
   if (req.query.json === 'true') {
     return res.json({ url: googleAuthUrl });
