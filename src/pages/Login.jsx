@@ -4,7 +4,7 @@
  * Student authentication login page.
  * Offers dual authentication options:
  * 1. "Continue with Google" (backend verified @sastra.ac.in restriction)
- * 2. "Login with Email & Password"
+ * 2. "Login with Email & Password" (with Show/Hide Password toggle)
  */
 
 import React, { useState, useEffect } from 'react';
@@ -15,11 +15,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { loginWithEmail } from '../services/authService';
 import { ROUTES } from '../constants/routes';
-import { AlertCircle, Lock, Mail, ArrowRight } from 'lucide-react';
+import { AlertCircle, Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -160,13 +161,25 @@ export function Login() {
               Forgot password?
             </Link>
           </div>
-          <Input
-            type="password"
-            placeholder="Your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+
+          <div className="relative flex items-center">
+            <Input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              inputClassName="pr-10"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none"
+              title={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
 
         <Button
