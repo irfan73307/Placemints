@@ -4,21 +4,24 @@ const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = requir
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/auth/google/callback';
+
+function getCallbackUrl(req) {
+  if (process.env.GOOGLE_CALLBACK_URL && process.env.GOOGLE_CALLBACK_URL.trim() !== '') {
+    return process.env.GOOGLE_CALLBACK_URL;
+  }
+  const host = req.get('host');
+  const protocol = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+  return `${protocol}://${host}/auth/google/callback`;
+}
 
 // GET /auth/google
 function googleLogin(req, res) {
   const scope = encodeURIComponent('email profile');
-  const host = req.get('host');
-  const protocol = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+  const callbackUrl = getCallbackUrl(req);
   
-  let callbackUrl = process.env.GOOGLE_CALLBACK_URL;
-  if (!callbackUrl || callbackUrl.includes('localhost')) {
-    callbackUrl = `${protocol}://${host}/auth/google/callback`;
-  }
+  console.log(`[OAuth 1/6] Google login initiated. ClientID: ${GOOGLE_CLIENT_ID.substring(0, 15)}... | CallbackURL: ${callbackUrl}`);
 
-  const clientId = process.env.GOOGLE_CLIENT_ID || '356564172947-2585e4bhckjaqr9g3fike1drlusks9aq.apps.googleusercontent.com';
-  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=${scope}&prompt=select_account`;
+  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=${scope}&prompt=select_account`;
   
   if (req.query.json === 'true') {
     return res.json({ url: googleAuthUrl });
@@ -33,10 +36,15 @@ async function googleCallback(req, res) {
     clientUrl = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null) || 'https://placemints.vercel.app';
   }
   clientUrl = clientUrl.replace(/\/+$/, '');
+  
+  const callbackUrl = getCallbackUrl(req);
+
   try {
     const { code } = req.query;
+    console.log(`[OAuth 2/6] Google callback reached. Code present: ${!!code} | CallbackURL: ${callbackUrl}`);
 
     if (!code) {
+      console.warn('[OAuth ERROR] Authorization code missing from Google redirect query.');
       return res.redirect(`${clientUrl}/login?error=oauth_code_missing`);
     }
 
@@ -48,7 +56,7 @@ async function googleCallback(req, res) {
         code,
         client_id: GOOGLE_CLIENT_ID,
         client_secret: GOOGLE_CLIENT_SECRET,
-        redirect_uri: GOOGLE_CALLBACK_URL,
+        redirect_uri: callbackUrl,
         grant_type: 'authorization_code',
       }),
     });
@@ -56,7 +64,7 @@ async function googleCallback(req, res) {
     const tokenData = await tokenRes.json();
 
     if (!tokenData.access_token) {
-      console.error('Google token exchange error:', tokenData);
+      console.error('[OAuth 3/6 ERROR] Google token exchange failed:', tokenData);
       return res.redirect(`${clientUrl}/login?error=google_token_failed`);
     }
 
@@ -68,6 +76,7 @@ async function googleCallback(req, res) {
     const googleUser = await userRes.json();
 
     if (!googleUser || !googleUser.email) {
+      console.error('[OAuth 4/6 ERROR] Failed to retrieve Google profile userinfo:', googleUser);
       return res.redirect(`${clientUrl}/login?error=google_email_missing`);
     }
 
@@ -76,9 +85,11 @@ async function googleCallback(req, res) {
     const picture = googleUser.picture;
     const googleId = googleUser.id;
 
+    console.log(`[OAuth 4/6] Retrieved Google user profile for: ${email}`);
+
     // 3. BACKEND ENFORCED GOOGLE AUTH RESTRICTION (@sastra.ac.in ONLY)
     if (!email.endsWith('@sastra.ac.in')) {
-      console.warn(`[AUTH REJECTED] Non-SASTRA Google Login attempt: ${email}`);
+      console.warn(`[OAuth 5/6 REJECTED] Non-SASTRA Google Login attempt blocked: ${email}`);
       return res.redirect(`${clientUrl}/login?error=domain_restricted`);
     }
 
@@ -99,11 +110,13 @@ async function googleCallback(req, res) {
           profileCompleted: false, // First time Google login must complete profile
         },
       });
+      console.log(`[OAuth 5/6] Created new database user record for: ${email} (ID: ${user.id})`);
     } else if (!user.googleId) {
       user = await prisma.user.update({
         where: { email },
         data: { googleId, avatar: picture || user.avatar, avatarUrl: picture || user.avatarUrl },
       });
+      console.log(`[OAuth 5/6] Updated existing user with Google ID for: ${email}`);
     }
 
     // 5. Generate JWT tokens & session refresh token cookie
@@ -127,9 +140,11 @@ async function googleCallback(req, res) {
 
     // If profile setup is incomplete, redirect to /profile/setup, otherwise /dashboard
     const redirectPath = user.profileCompleted ? '/dashboard' : '/profile/setup';
-    res.redirect(`${clientUrl}${redirectPath}?token=${accessToken}`);
+    const targetUrl = `${clientUrl}${redirectPath}?token=${accessToken}`;
+    console.log(`[OAuth 6/6 SUCCESS] Authentication successful. Redirecting to: ${targetUrl}`);
+    res.redirect(targetUrl);
   } catch (err) {
-    console.error('Google Callback Error:', err);
+    console.error('[OAuth CRITICAL ERROR] Exception during Google OAuth callback:', err);
     res.redirect(`${clientUrl}/login?error=google_auth_failed`);
   }
 }
