@@ -19,7 +19,10 @@ function googleLogin(req, res) {
 
 // GET /auth/google/callback
 async function googleCallback(req, res) {
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  let clientUrl = process.env.CLIENT_URL;
+  if (!clientUrl || clientUrl === '*' || clientUrl.includes('localhost')) {
+    clientUrl = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null) || 'https://placemints.vercel.app';
+  }
   try {
     const { code } = req.query;
 
