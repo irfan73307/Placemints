@@ -16,6 +16,7 @@ const {
   refreshCompanyLogo,
   setCustomCompanyLogo,
   removeCustomCompanyLogo,
+  processCompanyBulkQuestions,
 } = require('../controllers/adminController');
 const { requireAdmin, requirePrimaryAdmin } = require('../middleware/auth');
 
@@ -33,6 +34,7 @@ router.get('/manage', requireAdmin, getAdminsList);
 router.post('/companies/:id/refresh-logo', requireAdmin, refreshCompanyLogo);
 router.patch('/companies/:id/custom-logo', requireAdmin, setCustomCompanyLogo);
 router.delete('/companies/:id/custom-logo', requireAdmin, removeCustomCompanyLogo);
+router.post('/companies/bulk-questions', requireAdmin, processCompanyBulkQuestions);
 
 // Primary Admin Only Management Routes (Strictly enforced backend RBAC)
 router.post('/manage/add', requirePrimaryAdmin, addAdmin);

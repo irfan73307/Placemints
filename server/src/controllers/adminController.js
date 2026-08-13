@@ -2,6 +2,248 @@ const bcrypt = require('bcryptjs');
 const prisma = require('../db');
 const { sendSecurityAlert } = require('../utils/emailService');
 
+const COMPANY_SUBMISSION_LIMIT = 5;
+let activeCompanySubmissions = 0;
+const companySubmissionQueue = [];
+
+function normalizeCompanySlug(companyName) {
+  return String(companyName || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+function normalizeQuestionDifficulty(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'easy') return 'Easy';
+  if (normalized === 'hard') return 'Hard';
+  return 'Medium';
+}
+
+function normalizeQuestionTags(value) {
+  const tags = String(value || '')
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+    .join(',');
+
+  return tags || 'DSA';
+}
+
+function normalizeQuestionYear(value) {
+  const year = parseInt(value, 10);
+  return Number.isFinite(year) ? year : new Date().getFullYear();
+}
+
+function normalizeOptionalText(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim();
+}
+
+function buildCompanyCreateData({ companyName, slug, description, tags, tier, ctc, website, sector }) {
+  const fallbackDomain = slug ? `${slug.split('-')[0] || slug}.com` : null;
+
+  return {
+    slug,
+    name: companyName.trim(),
+    logo: fallbackDomain ? `https://logo.clearbit.com/${fallbackDomain}` : null,
+    logoUrl: fallbackDomain ? `https://logo.clearbit.com/${fallbackDomain}` : null,
+    website: normalizeOptionalText(website) || null,
+    tier: normalizeOptionalText(tier) || 'Product-based',
+    ctc: normalizeOptionalText(ctc) || 'Not specified',
+    description: normalizeOptionalText(description) || `Interview questions collected for ${companyName.trim()}.`,
+    sector: normalizeOptionalText(sector) || 'IT',
+    tags: normalizeQuestionTags(tags || 'Placement Prep,Interview Questions'),
+  };
+}
+
+function queueCompanySubmission(task) {
+  return new Promise((resolve, reject) => {
+    const execute = async () => {
+      activeCompanySubmissions += 1;
+
+      try {
+        const result = await task();
+        resolve(result);
+      } catch (error) {
+        reject(error);
+      } finally {
+        activeCompanySubmissions -= 1;
+        const nextTask = companySubmissionQueue.shift();
+        if (nextTask) {
+          nextTask();
+        }
+      }
+    };
+
+    if (activeCompanySubmissions < COMPANY_SUBMISSION_LIMIT) {
+      execute();
+      return;
+    }
+
+    companySubmissionQueue.push(execute);
+  });
+}
+
+async function processCompanyBulkQuestions(req, res) {
+  const { companyName, description, tags, tier, ctc, website, sector, questions } = req.body || {};
+  const normalizedCompanyName = normalizeOptionalText(companyName);
+
+  if (!normalizedCompanyName) {
+    return res.status(400).json({ message: 'Company name is required.' });
+  }
+
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return res.status(400).json({ message: 'At least one question is required.' });
+  }
+
+  const sanitizedQuestions = questions.map((question, index) => {
+    const questionText = normalizeOptionalText(question?.questionText);
+
+    return {
+      index,
+      questionText,
+      topicTags: normalizeQuestionTags(question?.topicTags),
+      difficulty: normalizeQuestionDifficulty(question?.difficulty),
+      year: normalizeQuestionYear(question?.year),
+      roundTitle: normalizeOptionalText(question?.roundTitle),
+    };
+  });
+
+  const invalidQuestions = sanitizedQuestions.filter((question) => !question.questionText);
+  const validQuestions = sanitizedQuestions.filter((question) => question.questionText);
+
+  if (validQuestions.length === 0) {
+    return res.status(400).json({
+      message: 'No valid questions were provided.',
+      invalidQuestions: invalidQuestions.map((question) => question.index),
+    });
+  }
+
+  const slug = normalizeCompanySlug(normalizedCompanyName);
+  const companyPayload = buildCompanyCreateData({
+    companyName: normalizedCompanyName,
+    slug,
+    description,
+    tags,
+    tier,
+    ctc,
+    website,
+    sector,
+  });
+
+  try {
+    const result = await queueCompanySubmission(async () => {
+      return prisma.$transaction(async (tx) => {
+        const existingCompany = await tx.company.findUnique({ where: { slug } });
+        let company = existingCompany;
+        let companyCreated = false;
+
+        if (!company) {
+          try {
+            company = await tx.company.upsert({
+              where: { slug },
+              update: {},
+              create: companyPayload,
+            });
+            companyCreated = true;
+          } catch (error) {
+            if (error.code === 'P2002') {
+              company = await tx.company.findUnique({ where: { slug } });
+              companyCreated = false;
+            } else {
+              throw error;
+            }
+          }
+        }
+
+        if (!company) {
+          throw new Error(`Failed to resolve company record for slug ${slug}`);
+        }
+
+        const existingRounds = await tx.interviewRound.findMany({
+          where: { companyId: company.id },
+          select: { id: true, title: true, roundNumber: true },
+        });
+        const roundMap = new Map(
+          existingRounds.map((round) => [normalizeOptionalText(round.title).toLowerCase(), round.id])
+        );
+        let nextRoundNumber = existingRounds.reduce((max, round) => Math.max(max, round.roundNumber || 0), 0) + 1;
+
+        const preparedQuestions = [];
+        for (const question of validQuestions) {
+          let roundId = null;
+
+          if (question.roundTitle) {
+            const roundKey = question.roundTitle.toLowerCase();
+            if (roundMap.has(roundKey)) {
+              roundId = roundMap.get(roundKey);
+            } else {
+              const round = await tx.interviewRound.create({
+                data: {
+                  companyId: company.id,
+                  roundNumber: nextRoundNumber,
+                  title: question.roundTitle,
+                  description: 'Imported via admin bulk upload.',
+                },
+              });
+              nextRoundNumber += 1;
+              roundId = round.id;
+              roundMap.set(roundKey, round.id);
+            }
+          }
+
+          preparedQuestions.push({
+            companyId: company.id,
+            roundId,
+            questionText: question.questionText,
+            topicTags: question.topicTags,
+            difficulty: question.difficulty,
+            year: question.year,
+            contributedBy: req.user?.id || null,
+          });
+        }
+
+        let insertedCount = 0;
+        const chunkSize = 500;
+        for (let index = 0; index < preparedQuestions.length; index += chunkSize) {
+          const chunk = preparedQuestions.slice(index, index + chunkSize);
+          const insertResult = await tx.question.createMany({ data: chunk });
+          insertedCount += insertResult.count || 0;
+        }
+
+        return {
+          company,
+          companyCreated,
+          insertedCount,
+          skippedCount: invalidQuestions.length,
+        };
+      });
+    });
+
+    res.status(result.companyCreated ? 201 : 200).json({
+      message: result.companyCreated
+        ? `Created ${result.company.name} with ${result.insertedCount} questions.`
+        : `Appended ${result.insertedCount} questions to ${result.company.name}.`,
+      company: result.company,
+      companyCreated: result.companyCreated,
+      insertedCount: result.insertedCount,
+      skippedCount: result.skippedCount,
+      invalidQuestions: invalidQuestions.map((question) => question.index),
+      slug,
+    });
+  } catch (error) {
+    console.error('[Admin Company Bulk Upload] Failed to submit questions', {
+      companyName: normalizedCompanyName,
+      questionCount: questions.length,
+      insertedCandidates: validQuestions.length,
+      error: error.message,
+    });
+    res.status(500).json({ message: 'Failed to submit company questions.' });
+  }
+}
+
 // GET /api/admin/stats
 async function getAdminStats(req, res) {
   try {
@@ -807,4 +1049,5 @@ module.exports = {
   refreshCompanyLogo,
   setCustomCompanyLogo,
   removeCustomCompanyLogo,
+  processCompanyBulkQuestions,
 };
