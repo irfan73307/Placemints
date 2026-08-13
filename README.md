@@ -8,7 +8,7 @@ Placemints is a full-stack campus placement preparation portal built specificall
 - **Saved Companies Library**: Bookmark target recruiters; synced directly across Dashboard, Library, and Profile.
 - **Interactive Student Profile**: Live synchronization with LeetCode, GitHub, Codeforces, and LinkedIn platforms.
 - **Dark / Light Theme Toggle**: Persistent theme choice across browser restarts.
-
+- **Role Based Access; ADMIN & Student
 ## Tech Stack
 - **Frontend**: React, Vite, Tailwind CSS, Lucide Icons, Axios, React Router v6.
 - **Backend**: Node.js, Express, Prisma ORM, JWT authentication, bcryptjs, SQLite / PostgreSQL.
