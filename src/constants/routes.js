@@ -17,6 +17,7 @@ export const ROUTES = {
   LIBRARY: '/library',
   PROFILE: '/profile',
   SETTINGS: '/settings',
+  ADMIN_COMPANY_ADD: '/admin/companies/add',
   NOT_FOUND: '*',
 };
 
