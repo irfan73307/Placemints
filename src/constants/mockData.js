@@ -44,8 +44,8 @@ export const mockCompanies = [
     pyqs: [
       { id: 'q1', question: 'Maximum Number of Pairs in Array', difficulty: 'Easy', topic: 'Arrays', topicTags: ['Arrays', 'HashMap'], year: '2024', frequency: '100%', starRating: '★★★★★', importanceLabel: 'Very Frequently Asked', expectedRound: 'Round 2: Technical Interview (DSA & Core CS)' },
       { id: 'q2', question: 'Detect and remove loop in a Singly Linked List', difficulty: 'Medium', topic: 'Linked List', topicTags: ['Linked List', 'Two Pointers'], year: '2024', frequency: '92%', starRating: '★★★★★', importanceLabel: 'Frequently Asked', expectedRound: 'Round 2: Technical Interview (DSA & Core CS)' },
-      { id: 'q3', question: 'SQL query to find 2nd highest salary using CTE and DENSE_RANK()', difficulty: 'Medium', topic: 'DBMS', topicTags: ['DBMS', 'SQL'], year: '2023', frequency: '85%', starRating: '★★★★☆', importanceLabel: 'Important', expectedRound: 'Round 2: Technical Interview (DSA & Core CS)' },
-      { id: 'q4', question: 'Check if a Binary Tree is a valid Binary Search Tree (BST)', difficulty: 'Medium', topic: 'Trees', topicTags: ['Trees', 'Binary Search Tree'], year: '2023', frequency: '80%', starRating: '★★★★☆', importanceLabel: 'Important', expectedRound: 'Round 2: Technical Interview (DSA & Core CS)' },
+      { id: 'q3', question: 'SQL query to find 2nd highest salary using CTE and DENSE_RANK()', difficulty: 'Medium', topic: 'DBMS', topicTags: ['DBMS', 'SQL'], year: '2023', frequency: '85%', starRating: '★★★★', importanceLabel: 'Important', expectedRound: 'Round 2: Technical Interview (DSA & Core CS)' },
+      { id: 'q4', question: 'Check if a Binary Tree is a valid Binary Search Tree (BST)', difficulty: 'Medium', topic: 'Trees', topicTags: ['Trees', 'Binary Search Tree'], year: '2023', frequency: '80%', starRating: '★★★★', importanceLabel: 'Important', expectedRound: 'Round 2: Technical Interview (DSA & Core CS)' },
     ],
     resources: [
       { title: 'TCS Digital NQT Syllabus & Previous Papers', url: 'https://geeksforgeeks.org', type: 'PDF Guide' },

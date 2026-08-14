@@ -21,10 +21,10 @@ const TOP_RECRUITERS_PRIORITY = [
 // Helper star rating generator
 function getStarRating(likeCount) {
   if (likeCount >= 90) return { stars: '★★★★★', label: 'Very Frequently Asked' };
-  if (likeCount >= 75) return { stars: '★★★★☆', label: 'Frequently Asked' };
-  if (likeCount >= 50) return { stars: '★★★☆☆', label: 'Moderately Asked' };
-  if (likeCount >= 25) return { stars: '★★☆☆☆', label: 'Occasionally Asked' };
-  return { stars: '★☆☆☆☆', label: 'Rarely Asked' };
+  if (likeCount >= 75) return { stars: '★★★★', label: 'Frequently Asked' };
+  if (likeCount >= 50) return { stars: '★★★', label: 'Moderately Asked' };
+  if (likeCount >= 25) return { stars: '★★', label: 'Occasionally Asked' };
+  return { stars: '★', label: 'Rarely Asked' };
 }
 
 // GET /api/companies?search=&tag=

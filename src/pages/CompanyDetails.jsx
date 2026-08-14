@@ -254,7 +254,7 @@ export function CompanyDetails() {
 
         {/* Row 2: Stars, Importance Label, Round */}
         <div className="flex items-center gap-2.5 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-          <span className="text-amber-500 font-bold tracking-wider">{starRating}</span>
+          <span className="text-amber-500 font-bold tracking-wider">{String(starRating).replace(/☆/g, '')}</span>
           <span className="font-medium text-slate-600 dark:text-slate-300">{importanceLabel}</span>
           <span className="text-slate-400 dark:text-slate-600">•</span>
           <span className="text-indigo-600 dark:text-indigo-400 font-semibold">{expectedRound}</span>
