@@ -50,6 +50,19 @@ const SUGGESTED_ROLES = [
   'DevOps Engineer',
 ];
 
+function resolveDepartmentOption(rawDept) {
+  if (!rawDept) return '';
+  const clean = String(rawDept).trim().toLowerCase();
+  const match = SASTRA_DEPARTMENTS.find(
+    (d) =>
+      d.toLowerCase() === clean ||
+      d.toLowerCase().includes(`(${clean})`) ||
+      d.toLowerCase().includes(clean) ||
+      clean.includes(d.toLowerCase())
+  );
+  return match || rawDept;
+}
+
 export function Profile() {
   const { user, updateUserData } = useAuth();
   const toast = useToast();
@@ -94,10 +107,10 @@ export function Profile() {
       
       const parsed = parseRollNumber(user.email || user.rollNumber || user.rollNo);
       let userDept = user.department || user.branch;
-      if (!userDept || ((userDept === 'CSE' || userDept.toLowerCase() === 'computer science') && parsed?.branch && parsed.branch !== 'CSE')) {
-        userDept = parsed?.branch || userDept || 'Information Technology (IT)';
+      if (!userDept || ((userDept === 'CSE' || userDept.toLowerCase().includes('computer science')) && parsed?.branch && parsed.branch !== 'CSE')) {
+        userDept = parsed?.branch || 'IT';
       }
-      setDepartment(userDept);
+      setDepartment(resolveDepartmentOption(userDept));
       setDegree(user.degree || 'B.Tech');
 
       let userGradYear = user.graduationYear || user.batchYear;
@@ -206,6 +219,53 @@ export function Profile() {
       const res = await updateProfile(payload);
       if (res && res.user) {
         updateUserData(res.user);
+        
+        // Immediate local state synchronization
+        if (res.user.fullName || res.user.name) setFullName(res.user.fullName || res.user.name);
+        if (res.user.avatar || res.user.avatarUrl) setAvatar(res.user.avatar || res.user.avatarUrl);
+        if (res.user.department || res.user.branch) setDepartment(resolveDepartmentOption(res.user.department || res.user.branch));
+        if (res.user.degree) setDegree(res.user.degree);
+        if (res.user.graduationYear || res.user.batchYear) setGraduationYear(res.user.graduationYear || res.user.batchYear);
+        if (res.user.section) setSection(res.user.section);
+        if (res.user.rollNumber || res.user.rollNo) setRollNumber(res.user.rollNumber || res.user.rollNo);
+        if (res.user.cgpa) setCgpa(res.user.cgpa);
+        if (res.user.placementGoal || res.user.targetRole) setPlacementGoal(res.user.placementGoal || res.user.targetRole);
+        if (res.user.interestedRoles) {
+          setInterestedRoles(
+            Array.isArray(res.user.interestedRoles)
+              ? res.user.interestedRoles
+              : res.user.interestedRoles.split(',').map((s) => s.trim())
+          );
+        }
+        if (res.user.programmingLanguages !== undefined) {
+          setProgrammingLanguages(
+            Array.isArray(res.user.programmingLanguages)
+              ? res.user.programmingLanguages.join(', ')
+              : res.user.programmingLanguages || ''
+          );
+        }
+        if (res.user.frameworks !== undefined) {
+          setFrameworks(
+            Array.isArray(res.user.frameworks)
+              ? res.user.frameworks.join(', ')
+              : res.user.frameworks || ''
+          );
+        }
+        if (res.user.technologies !== undefined) {
+          setTechnologies(
+            Array.isArray(res.user.technologies)
+              ? res.user.technologies.join(', ')
+              : res.user.technologies || ''
+          );
+        }
+        if (res.user.github !== undefined) setGithub(res.user.github || '');
+        if (res.user.linkedin !== undefined) setLinkedin(res.user.linkedin || '');
+        if (res.user.leetcode !== undefined) setLeetcode(res.user.leetcode || '');
+        if (res.user.codeforces !== undefined) setCodeforces(res.user.codeforces || '');
+        if (res.user.codechef !== undefined) setCodechef(res.user.codechef || '');
+        if (res.user.resume !== undefined) setResume(res.user.resume || '');
+        if (res.user.bio !== undefined) setBio(res.user.bio || '');
+
         setIsEditing(false);
         toast.success('Profile updated successfully!');
       }
