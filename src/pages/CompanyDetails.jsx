@@ -35,7 +35,8 @@ import {
   Code2,
   Database,
   Link2,
-  Tag
+  Tag,
+  Cpu
 } from 'lucide-react';
 
 // Topic to Lucide icon resolver
