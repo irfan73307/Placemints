@@ -17,6 +17,11 @@ export const ROUTES = {
   LIBRARY: '/library',
   PROFILE: '/profile',
   SETTINGS: '/settings',
+  // Admin-specific routes
+  ADMIN: '/admin',
+  ADMIN_STUDENTS: '/admin/students',
+  ADMIN_SETTINGS: '/admin/settings',
+  ADMIN_COMPANY_ADD: '/admin/companies/add',
   NOT_FOUND: '*',
 };
 

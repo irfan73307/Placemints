@@ -1,6 +1,37 @@
 const bcrypt = require('bcryptjs');
 const prisma = require('../db');
 const { sendSecurityAlert } = require('../utils/emailService');
+const { slugify } = require('../utils/slugify');
+
+// ---------------------------------------------------------------------------
+// Inline concurrency limiter (CJS-safe, replaces p-limit package)
+// Caps simultaneous in-flight DB transactions to protect the connection pool.
+// ---------------------------------------------------------------------------
+function createPLimit(concurrency) {
+  let active = 0;
+  const queue = [];
+  function next() {
+    if (active >= concurrency || queue.length === 0) return;
+    active++;
+    const { fn, resolve, reject } = queue.shift();
+    Promise.resolve().then(() => fn()).then(
+      (val) => { active--; resolve(val); next(); },
+      (err) => { active--; reject(err); next(); }
+    );
+  }
+  return function limit(fn) {
+    return new Promise((resolve, reject) => {
+      queue.push({ fn, resolve, reject });
+      next();
+    });
+  };
+}
+
+// 5 simultaneous DB transactions max
+const dbLimit = createPLimit(5);
+
+const VALID_DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
+const CHUNK_SIZE = 500;
 
 // GET /api/admin/stats
 async function getAdminStats(req, res) {
@@ -790,6 +821,133 @@ async function removeCustomCompanyLogo(req, res) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// POST /api/admin/companies/bulk-questions
+// Resolves (or creates) a company by slug, then batch-inserts questions.
+// Concurrency-safe: uses dbLimit to cap simultaneous transactions and catches
+// P2002 unique-constraint errors from same-company race conditions.
+// ---------------------------------------------------------------------------
+async function bulkAddQuestions(req, res) {
+  const { companyName, description, tags, tier, ctc, website, sector, questions } = req.body;
+
+  // ── Input validation ──────────────────────────────────────────────────────
+  if (!companyName || !String(companyName).trim()) {
+    return res.status(400).json({ message: 'Company name is required.' });
+  }
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return res.status(400).json({ message: 'At least one question is required.' });
+  }
+
+  // Validate + normalize each question
+  const validatedQuestions = [];
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i];
+    if (!q.questionText || !String(q.questionText).trim()) {
+      return res.status(400).json({ message: `Question ${i + 1} has empty question text.` });
+    }
+    validatedQuestions.push({
+      questionText: String(q.questionText).trim(),
+      topicTags: String(q.topicTags || 'General').trim() || 'General',
+      difficulty: VALID_DIFFICULTIES.includes(q.difficulty) ? q.difficulty : 'Medium',
+      year: parseInt(q.year, 10) || new Date().getFullYear(),
+    });
+  }
+
+  const slug = slugify(String(companyName));
+  if (!slug) {
+    return res.status(400).json({ message: 'Company name could not be normalized into a valid slug.' });
+  }
+
+  try {
+    const result = await dbLimit(() =>
+      processCompanyQuestions({
+        slug,
+        companyName: String(companyName).trim(),
+        description: description || `${String(companyName).trim()} campus recruitment drive at SASTRA University.`,
+        tags: tags || 'Technology',
+        tier: tier || 'Tier-2',
+        ctc: ctc || 'Competitive',
+        website: website || null,
+        sector: sector || 'IT',
+        questions: validatedQuestions,
+        adminId: req.user.id,
+      })
+    );
+
+    return res.status(200).json({
+      success: true,
+      isNew: result.isNew,
+      company: { id: result.company.id, name: result.company.name, slug: result.company.slug },
+      questionsInserted: result.questionsInserted,
+      message: result.isNew
+        ? `Created "${result.company.name}" with ${result.questionsInserted} question(s) successfully.`
+        : `Appended ${result.questionsInserted} question(s) to "${result.company.name}" successfully.`,
+    });
+  } catch (err) {
+    // Log context for bulk-import debugging without leaking question text
+    console.error(
+      `Bulk add questions error [company: "${companyName}", slug: "${slug}", questions: ${validatedQuestions.length}]:`,
+      err.code || err.message
+    );
+    return res.status(500).json({ message: 'Failed to add questions. Please try again.' });
+  }
+}
+
+/**
+ * Core upsert + question-insert logic wrapped in a Prisma transaction.
+ * Handles the P2002 race condition: if two requests race to create the same
+ * company slug simultaneously, the "loser" catches P2002, re-fetches the
+ * winner's row, and still attaches its questions — no data is lost.
+ */
+async function processCompanyQuestions({ slug, companyName, description, tags, tier, ctc, website, sector, questions, adminId }) {
+  let company;
+  let isNew = false;
+
+  try {
+    const txResult = await prisma.$transaction(async (tx) => {
+      const existing = await tx.company.findUnique({ where: { slug } });
+      if (existing) {
+        return { company: existing, isNew: false };
+      }
+      const created = await tx.company.create({
+        data: { slug, name: companyName, description, tags, tier, ctc, website, sector },
+      });
+      return { company: created, isNew: true };
+    });
+    company = txResult.company;
+    isNew = txResult.isNew;
+  } catch (err) {
+    // P2002 = unique-constraint violation on `slug` — another concurrent
+    // request won the race to create this company. Gracefully attach to it.
+    if (err.code === 'P2002') {
+      company = await prisma.company.findUnique({ where: { slug } });
+      if (!company) throw err; // slug index missing — re-throw genuine error
+      isNew = false;
+    } else {
+      throw err;
+    }
+  }
+
+  // ── Chunked question inserts ───────────────────────────────────────────────
+  const questionData = questions.map((q) => ({
+    companyId: company.id,
+    questionText: q.questionText,
+    topicTags: q.topicTags,
+    difficulty: q.difficulty,
+    year: q.year,
+    contributedBy: adminId,
+  }));
+
+  let questionsInserted = 0;
+  for (let i = 0; i < questionData.length; i += CHUNK_SIZE) {
+    const chunk = questionData.slice(i, i + CHUNK_SIZE);
+    const result = await prisma.question.createMany({ data: chunk });
+    questionsInserted += result.count;
+  }
+
+  return { company, isNew, questionsInserted };
+}
+
 module.exports = {
   getAdminStats,
   getStudents,
@@ -807,4 +965,5 @@ module.exports = {
   refreshCompanyLogo,
   setCustomCompanyLogo,
   removeCustomCompanyLogo,
+  bulkAddQuestions,
 };

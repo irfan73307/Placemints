@@ -30,6 +30,7 @@ import Profile from '../pages/Profile';
 import Settings from '../pages/Settings';
 import AdminStudents from '../pages/AdminStudents';
 import AdminSettings from '../pages/AdminSettings';
+import AdminCompanyAdd from '../pages/AdminCompanyAdd';
 import NotFound from '../pages/NotFound';
 
 export const router = createBrowserRouter([
@@ -113,6 +114,10 @@ export const router = createBrowserRouter([
               {
                 path: '/admin/settings',
                 element: <AdminSettings />,
+              },
+              {
+                path: '/admin/companies/add',
+                element: <AdminCompanyAdd />,
               },
             ],
           },

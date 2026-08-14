@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { LayoutDashboard, Building2, Bookmark, User, GraduationCap, Settings as SettingsIcon, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Building2, Bookmark, User, GraduationCap, Settings as SettingsIcon, ShieldAlert, ShieldCheck, PlusCircle } from 'lucide-react';
 import { ROUTES } from '../constants/routes';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -28,6 +28,7 @@ export function Sidebar() {
   const adminItems = isAdmin ? [
     { name: 'Admin Directory', path: '/admin/students', icon: ShieldAlert },
     { name: 'Admin Settings', path: '/admin/settings', icon: ShieldCheck },
+    { name: 'Company Addn', path: ROUTES.ADMIN_COMPANY_ADD, icon: PlusCircle },
   ] : [];
 
   return (
