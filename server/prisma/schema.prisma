@@ -239,8 +239,6 @@ model Question {
   topicTags     String          // Comma-separated tags
   difficulty    String          @default("Medium")
   year          Int             @default(2024)
-  frequency     Int?            // Real historical ask-frequency %, 0-100, from source CSV
-  leetcodeUrl   String?         // Real verified LeetCode/problem link, from source CSV
   likeCount     Int             @default(0)
   contributedBy String?
   contributor   User?           @relation(fields: [contributedBy], references: [id], onDelete: SetNull)
