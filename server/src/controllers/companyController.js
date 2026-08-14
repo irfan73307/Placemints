@@ -131,8 +131,8 @@ async function getCompanyById(req, res) {
     const uniqueQuestions = Array.from(uniqueQuestionsMap.values());
 
     const allPyqs = uniqueQuestions.map((q, idx) => {
-      // Frequency: real admin-supplied value → engagement likeCount → last-resort estimate
-      const frequencyVal = q.frequency ?? q.likeCount ?? (95 - (idx * 3));
+      // frequency field not yet in DB (pending migration) — fall back to likeCount or position estimate
+      const frequencyVal = q.likeCount || (95 - (idx * 3));
       const starRating = getStarRating(frequencyVal);
 
       return {
@@ -140,19 +140,18 @@ async function getCompanyById(req, res) {
         problemNumber: `#${101 + idx}`,
         question: q.questionText,
         difficulty: q.difficulty,
-        topic: q.topicTags.split(',')[0] || 'DSA',
-        topicTags: q.topicTags.split(',').map((t) => t.trim()),
+        topic: (q.topicTags || 'General').split(',')[0] || 'DSA',
+        topicTags: (q.topicTags || 'General').split(',').map((t) => t.trim()),
         year: String(q.year),
         likeCount: q.likeCount,
         frequency: `${frequencyVal}%`,
         starRating: starRating.stars,
         importanceLabel: starRating.label,
-        // Real round title when linked; never rotate by position index
         expectedRound: q.round?.title || 'Interview Round',
         isSastraPyq: true,
-        // Only expose a link the admin explicitly supplied — never a guessed slug
-        leetcodeUrl: q.leetcodeUrl || null,
-        hasVerifiedLink: Boolean(q.leetcodeUrl),
+        // leetcodeUrl field not yet in DB — always null until migration runs
+        leetcodeUrl: null,
+        hasVerifiedLink: false,
       };
     });
 
