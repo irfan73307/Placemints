@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const prisma = require('../db');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt');
-const { detectBranchFromEmail } = require('../utils/programCodeMap');
+const { parseRollNumber, detectBranchFromEmail } = require('../utils/programCodeMap');
 
 function getGoogleClientId() {
   return process.env.GOOGLE_CLIENT_ID ? process.env.GOOGLE_CLIENT_ID.trim() : '';
@@ -116,9 +116,10 @@ function computeGraduationYearFromEmail(email) {
 
     const isAdmin = email === '127015088@sastra.ac.in';
     const userRole = isAdmin ? 'ADMIN' : 'STUDENT';
-    const computedBatch = computeGraduationYearFromEmail(email);
+    const parsedRoll = parseRollNumber(email);
+    const computedBatch = parsedRoll?.graduationYear || computeGraduationYearFromEmail(email);
     const rollNo = email.split('@')[0];
-    const detectedBranch = detectBranchFromEmail(email) || 'CSE';
+    const detectedBranch = parsedRoll?.branch || 'CSE';
 
     // 4. Upsert user in database with verified Google email
     let user = null;
@@ -148,7 +149,7 @@ function computeGraduationYearFromEmail(email) {
             profileCompleted: false,
           },
         });
-        console.log(`[OAuth 5/6] Created new database user record for: ${email} (ID: ${user.id}, Branch: ${detectedBranch})`);
+        console.log(`[OAuth 5/6] Created new database user record for: ${email} (ID: ${user.id}, Branch: ${detectedBranch}, Batch: ${computedBatch})`);
       } else {
         user = await prisma.user.update({
           where: { email },
@@ -156,8 +157,6 @@ function computeGraduationYearFromEmail(email) {
             googleId,
             avatar: picture || user.avatar,
             avatarUrl: picture || user.avatarUrl,
-            branch: user.branch || detectedBranch,
-            department: user.department || detectedBranch,
             role: isAdmin ? 'ADMIN' : user.role,
             isPrimaryAdmin: isAdmin ? true : user.isPrimaryAdmin,
           },
@@ -247,8 +246,9 @@ async function register(req, res) {
 
     const isAdmin = normalizedEmail === '127015088@sastra.ac.in';
     const passwordHash = await bcrypt.hash(password, 10);
-    const computedBatch = computeGraduationYearFromEmail(normalizedEmail);
-    const detectedBranch = detectBranchFromEmail(normalizedEmail) || 'CSE';
+    const parsedRoll = parseRollNumber(normalizedEmail);
+    const computedBatch = parsedRoll?.graduationYear || computeGraduationYearFromEmail(normalizedEmail);
+    const detectedBranch = parsedRoll?.branch || 'CSE';
 
     const user = await prisma.user.create({
       data: {
@@ -521,9 +521,10 @@ function formatUserResponse(user) {
   const isPrimary = user.email && user.email.toLowerCase().trim() === '127015088@sastra.ac.in';
   const role = isPrimary ? 'ADMIN' : (user.role || 'STUDENT').toUpperCase();
   const isPrimaryAdmin = isPrimary ? true : (user.isPrimaryAdmin || false);
-  const rawBranch = user.department || user.branch || detectBranchFromEmail(user.email) || 'CSE';
+  const parsedRoll = parseRollNumber(user.email || user.rollNumber || user.rollNo);
+  const rawBranch = user.department || user.branch || parsedRoll?.branch || 'CSE';
   const rawRoll = user.rollNumber || user.rollNo || (user.email ? user.email.split('@')[0] : '');
-  const gradYear = user.graduationYear || user.batchYear || 2026;
+  const gradYear = user.graduationYear || user.batchYear || parsedRoll?.graduationYear || 2026;
 
   return {
     id: user.id,

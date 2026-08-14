@@ -1,5 +1,5 @@
 const prisma = require('../db');
-const { detectBranchFromEmail } = require('../utils/programCodeMap');
+const { parseRollNumber, detectBranchFromEmail } = require('../utils/programCodeMap');
 
 // GET /api/users/me/saved
 async function getSavedCompanies(req, res) {
@@ -175,8 +175,10 @@ async function updateProfile(req, res) {
       }
     }
 
-    // Branch / Department Resolution
-    const resolvedBranch = department || branch || (validatedRoll ? detectBranchFromEmail(validatedRoll) : null) || (userEmail ? detectBranchFromEmail(userEmail) : null) || undefined;
+    // Branch / Department & Graduation Year Resolution
+    const parsedRoll = parseRollNumber(validatedRoll || userEmail);
+    const resolvedBranch = department || branch || parsedRoll?.branch || undefined;
+    const finalGradYear = validatedGradYear || parsedRoll?.graduationYear || undefined;
     const finalName = fullName || name || undefined;
     const finalAvatar = avatar || avatarUrl || undefined;
     const finalGoal = placementGoal || targetRole || undefined;
@@ -189,8 +191,8 @@ async function updateProfile(req, res) {
       department: resolvedBranch,
       branch: resolvedBranch,
       degree: degree || undefined,
-      graduationYear: validatedGradYear,
-      batchYear: validatedGradYear,
+      graduationYear: finalGradYear,
+      batchYear: finalGradYear,
       section: section !== undefined ? section : undefined,
       rollNumber: validatedRoll,
       rollNo: validatedRoll,
@@ -235,8 +237,9 @@ async function updateProfile(req, res) {
     }
 
     const isPrimary = user.email && user.email.toLowerCase().trim() === '127015088@sastra.ac.in';
-    const rawBranchOut = user.department || user.branch || detectBranchFromEmail(user.email) || 'CSE';
-    const gradYearOut = user.graduationYear || user.batchYear || 2026;
+    const parsedUserRoll = parseRollNumber(user.email || user.rollNumber || user.rollNo);
+    const rawBranchOut = user.department || user.branch || parsedUserRoll?.branch || 'CSE';
+    const gradYearOut = user.graduationYear || user.batchYear || parsedUserRoll?.graduationYear || 2026;
     const rollOut = user.rollNumber || user.rollNo || (user.email ? user.email.split('@')[0] : '');
 
     res.json({

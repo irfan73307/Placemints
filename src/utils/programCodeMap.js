@@ -1,34 +1,58 @@
-// First 6 digits of SASTRA roll number -> department abbreviation
+// Program code (digits 4-6 of roll number) -> department abbreviation
+// Valid across ALL batch years, not tied to a specific graduation year.
 export const PROGRAM_CODE_MAP = {
-  '127001': 'CIVIL',
-  '127002': 'CHE',
-  '127003': 'CSE',
-  '127004': 'ECE',
-  '127005': 'EEE',
-  '127006': 'EIE',
-  '127009': 'MECH',
-  '127010': 'BIOTECH',
-  '127011': 'BIOENG',
-  '127012': 'MCT',
-  '127013': 'BI',
-  '127014': 'ICT',
-  '127015': 'IT',
-  '127017': 'AERO',
-  '127018': 'CSBS',
-  '128123': 'BIOTECH-INT',
-  '127156': 'AIDS',        // CSE (AI & Data Science)
-  '127157': 'CSE-CSBT',    // CSE (Cyber Security & Blockchain)
-  '127158': 'CSE-IOT',     // CSE (IoT & Automation)
-  '127159': 'EEE-SGEV',    // EEE (Smart Grid & EVs)
-  '127160': 'ECE-CPS',     // ECE (Cyber Physical Systems)
-  '127161': 'MECH-DM',     // MECH (Digital Manufacturing)
-  '127179': 'RAI',         // Robotics and AI
-  '127180': 'VLSI',        // Electronics Engineering (VLSI Design)
+  '001': 'CIVIL',
+  '002': 'CHE',
+  '003': 'CSE',
+  '004': 'ECE',
+  '005': 'EEE',
+  '006': 'EIE',
+  '009': 'MECH',
+  '010': 'BIOTECH',
+  '011': 'BIOENG',
+  '012': 'MCT',
+  '013': 'BI',
+  '014': 'ICT',
+  '015': 'IT',
+  '017': 'AERO',
+  '018': 'CSBS',
+  '156': 'AIDS',        // CSE (AI & Data Science)
+  '157': 'CSE-CSBT',    // CSE (Cyber Security & Blockchain)
+  '158': 'CSE-IOT',     // CSE (IoT & Automation)
+  '159': 'EEE-SGEV',    // EEE (Smart Grid & EVs)
+  '160': 'ECE-CPS',     // ECE (Cyber Physical Systems)
+  '161': 'MECH-DM',     // MECH (Digital Manufacturing)
+  '179': 'RAI',         // Robotics and AI
+  '180': 'VLSI',        // Electronics Engineering (VLSI Design)
 };
 
-export function detectBranchFromEmail(email) {
-  if (!email || typeof email !== 'string') return null;
-  const match = /^(\d{6})/.exec(email.trim().toLowerCase());
+export const CAMPUS_MAP = {
+  '1': 'SASTRA Main Campus (Thanjavur)',
+};
+
+export function parseRollNumber(emailOrRoll) {
+  if (!emailOrRoll || typeof emailOrRoll !== 'string') return null;
+
+  // Extract numeric roll part (handles both full email or just roll number)
+  const trimmed = emailOrRoll.trim().toLowerCase();
+  const match = /^(\d{9,})/.exec(trimmed.includes('@') ? trimmed.split('@')[0] : trimmed);
   if (!match) return null;
-  return PROGRAM_CODE_MAP[match[1]] || null;
+
+  const roll = match[1];
+  if (roll.length < 6) return null;
+
+  const campusCode = roll[0];
+  const yearSuffix = roll.slice(1, 3);   // "27", "28", ...
+  const programCode = roll.slice(3, 6);  // "015", "003", ...
+
+  const branch = PROGRAM_CODE_MAP[programCode] || null;
+  const graduationYear = /^\d{2}$/.test(yearSuffix) ? 2000 + parseInt(yearSuffix, 10) : null;
+  const campus = CAMPUS_MAP[campusCode] || null;
+
+  return { branch, graduationYear, campus, rollNumber: roll };
+}
+
+export function detectBranchFromEmail(email) {
+  const parsed = parseRollNumber(email);
+  return parsed ? parsed.branch : null;
 }

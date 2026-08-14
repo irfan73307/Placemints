@@ -15,7 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { updateProfile } from '../services/userService';
 import { calculateProfileCompletion, SASTRA_DEPARTMENTS } from '../utils/profileCompletion';
-import { detectBranchFromEmail } from '../utils/programCodeMap';
+import { parseRollNumber, detectBranchFromEmail } from '../utils/programCodeMap';
 import { ROUTES } from '../constants/routes';
 import { 
   User, 
@@ -41,6 +41,8 @@ const SUGGESTED_ROLES = [
 
 export function getGraduationYearFromEmailOrRoll(emailOrRoll) {
   if (!emailOrRoll) return '';
+  const parsed = parseRollNumber(String(emailOrRoll));
+  if (parsed && parsed.graduationYear) return parsed.graduationYear;
   const str = String(emailOrRoll).trim();
   const roll = str.includes('@') ? str.split('@')[0] : str;
   if (roll.length >= 3 && /^\d+$/.test(roll)) {
@@ -71,8 +73,9 @@ export function ProfileSetup() {
   const navigate = useNavigate();
 
   const defaultRollNumber = user?.rollNumber || user?.rollNo || (user?.email ? user.email.split('@')[0] : '');
-  const computedGraduationYear = user?.graduationYear || user?.batchYear || getGraduationYearFromEmailOrRoll(user?.email || defaultRollNumber) || 2026;
-  const detectedBranch = detectBranchFromEmail(user?.email || defaultRollNumber) || '';
+  const parsedDefault = parseRollNumber(user?.email || defaultRollNumber);
+  const computedGraduationYear = user?.graduationYear || user?.batchYear || parsedDefault?.graduationYear || getGraduationYearFromEmailOrRoll(user?.email || defaultRollNumber) || 2026;
+  const detectedBranch = parsedDefault?.branch || detectBranchFromEmail(user?.email || defaultRollNumber) || '';
   const initialDepartment = resolveDepartmentOption(user?.department || user?.branch || detectedBranch) || 'Information Technology (IT)';
 
   // Personal & Academic State
@@ -94,7 +97,8 @@ export function ProfileSetup() {
       const userRoll = user.rollNumber || user.rollNo || (user.email ? user.email.split('@')[0] : '');
       if (userRoll) setRollNumber(userRoll);
 
-      const branchDetected = detectBranchFromEmail(user.email || userRoll) || '';
+      const parsed = parseRollNumber(user.email || userRoll);
+      const branchDetected = parsed?.branch || detectBranchFromEmail(user.email || userRoll) || '';
       const deptResolved = resolveDepartmentOption(user.department || user.branch || branchDetected);
       if (deptResolved) setDepartment(deptResolved);
 
@@ -102,7 +106,7 @@ export function ProfileSetup() {
       if (user.section) setSection(user.section);
       if (user.cgpa) setCgpa(user.cgpa);
       if (user.placementGoal || user.targetRole) setPlacementGoal(user.placementGoal || user.targetRole);
-      const gradYear = user.graduationYear || user.batchYear || getGraduationYearFromEmailOrRoll(user.email || userRoll);
+      const gradYear = user.graduationYear || user.batchYear || parsed?.graduationYear || getGraduationYearFromEmailOrRoll(user.email || userRoll);
       if (gradYear) setGraduationYear(gradYear);
     }
   }, [user]);
@@ -153,22 +157,21 @@ export function ProfileSetup() {
     const numericVal = val.replace(/\D/g, ''); // Numbers only
     setRollNumber(numericVal);
 
-    // Auto compute graduation year from 2nd and 3rd digit if available (e.g. 127015088 -> 2027)
-    if (numericVal.length >= 3) {
-      const yy = parseInt(numericVal.substring(1, 3), 10);
-      if (!isNaN(yy) && yy >= 0 && yy <= 99) {
-        setGraduationYear(2000 + yy);
+    const parsed = parseRollNumber(numericVal);
+    if (parsed) {
+      if (parsed.graduationYear) {
+        setGraduationYear(parsed.graduationYear);
       }
-    }
-
-    // Auto-detect branch from roll number if at least 6 digits
-    if (numericVal.length >= 6) {
-      const branchCode = detectBranchFromEmail(numericVal);
-      if (branchCode) {
-        const matched = resolveDepartmentOption(branchCode);
+      if (parsed.branch) {
+        const matched = resolveDepartmentOption(parsed.branch);
         if (matched) {
           setDepartment(matched);
         }
+      }
+    } else if (numericVal.length >= 3) {
+      const yy = parseInt(numericVal.substring(1, 3), 10);
+      if (!isNaN(yy) && yy >= 0 && yy <= 99) {
+        setGraduationYear(2000 + yy);
       }
     }
 
