@@ -208,6 +208,8 @@ model Company {
   description String
   sector      String?  @default("IT")
   tags        String   // Comma-separated tags
+  wikiData    Json?    // Structured placement facts extracted from Wikipedia infobox
+  wikiFetchedAt DateTime? // Cache timestamp for 30-day validity window
   createdAt   DateTime @default(now())
 
   rounds              InterviewRound[]

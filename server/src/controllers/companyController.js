@@ -1,4 +1,5 @@
 const prisma = require('../db');
+const { getOrRefreshCompanyWikiData } = require('../apihandling/wikipediaService');
 
 const TOP_RECRUITERS_PRIORITY = [
   'google',
@@ -175,6 +176,9 @@ async function getCompanyById(req, res) {
       }
     });
 
+    // Retrieve placement facts from Wikipedia cache (30-day window / background refresh)
+    const wikiData = await getOrRefreshCompanyWikiData(company);
+
     const formattedCompany = {
       id: company.id,
       slug: company.slug,
@@ -200,6 +204,7 @@ async function getCompanyById(req, res) {
       sastraQuestions,
       generalQuestions,
       pyqs: allPyqs,
+      wikiData: wikiData || company.wikiData || null,
       resources: resources.length > 0
         ? resources.map((res) => ({
             title: res.title,

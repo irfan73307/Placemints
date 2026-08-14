@@ -36,7 +36,19 @@ import {
   Database,
   Link2,
   Tag,
-  Cpu
+  Cpu,
+  Briefcase,
+  Boxes,
+  Users,
+  UserCheck,
+  DollarSign,
+  TrendingUp,
+  Wallet,
+  Landmark,
+  MapPin,
+  Users2,
+  Shield,
+  GitBranch
 } from 'lucide-react';
 
 // Topic to Lucide icon resolver
@@ -163,11 +175,31 @@ export function CompanyDetails() {
     };
   }, [company]);
 
+  const wikiFacts = React.useMemo(() => {
+    if (!company?.wikiData) return [];
+    const wd = company.wikiData;
+    const items = [
+      { key: 'industry', label: 'Industry', value: wd.industry, icon: Briefcase },
+      { key: 'products', label: 'Products', value: wd.products, icon: Boxes },
+      { key: 'founders', label: 'Founders', value: wd.founders, icon: Users },
+      { key: 'keyPeople', label: 'Key People', value: wd.keyPeople, icon: UserCheck },
+      { key: 'revenue', label: 'Revenue', value: wd.revenue, icon: DollarSign },
+      { key: 'operatingIncome', label: 'Operating Income', value: wd.operatingIncome, icon: TrendingUp },
+      { key: 'netIncome', label: 'Net Income', value: wd.netIncome, icon: Wallet },
+      { key: 'totalAssets', label: 'Total Assets', value: wd.totalAssets, icon: Landmark },
+      { key: 'headquarters', label: 'Headquarters / Locations', value: wd.headquarters, icon: MapPin },
+      { key: 'numEmployees', label: 'Number of Employees', value: wd.numEmployees, icon: Users2 },
+      { key: 'parentCompany', label: 'Parent Company', value: wd.parentCompany, icon: Shield },
+      { key: 'subsidiaries', label: 'Subsidiaries / Divisions', value: wd.subsidiaries, icon: GitBranch },
+    ];
+    return items.filter((item) => item.value !== null && item.value !== undefined && String(item.value).trim() !== '');
+  }, [company?.wikiData]);
+
   if (isLoading) {
     return (
       <div className="py-20 text-center space-y-3">
-        <div className="w-10 h-10 border-4 border-brand-600 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-xs text-slate-500 font-medium">Loading company archive...</p>
+        <div className="w-8 h-8 border-3 border-brand-600 border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-xs text-slate-500">Loading placement intelligence...</p>
       </div>
     );
   }
@@ -175,8 +207,8 @@ export function CompanyDetails() {
   if (!company) {
     return (
       <div className="py-20 text-center space-y-4">
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Company Not Found</h2>
-        <p className="text-xs text-slate-500">The requested company archive could not be located.</p>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Company not found</h2>
+        <p className="text-xs text-slate-500">The requested recruitment profile does not exist.</p>
         <Link to="/companies">
           <Button variant="secondary" size="sm">Back to Companies</Button>
         </Link>
@@ -359,6 +391,55 @@ export function CompanyDetails() {
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
+            {/* Placement Facts (Wikipedia Sourced - Rendered only if facts exist) */}
+            {wikiFacts.length > 0 && (
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-card space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+                    <span>Company Placement Facts</span>
+                  </h2>
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                    Official Facts
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {wikiFacts.map((fact) => {
+                    const Icon = fact.icon;
+                    return (
+                      <div
+                        key={fact.key}
+                        className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800/80 space-y-1 hover:border-brand-300 dark:hover:border-brand-800/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-xs font-semibold">
+                          <Icon className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400 shrink-0" />
+                          <span>{fact.label}</span>
+                        </div>
+                        <p className="text-xs font-bold text-slate-900 dark:text-white leading-snug break-words">
+                          {fact.value}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {company?.wikiData?.wikipediaUrl && (
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-end text-[11px] text-slate-400 dark:text-slate-500">
+                    <a
+                      href={company.wikiData.wikipediaUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="hover:text-brand-600 dark:hover:text-brand-400 hover:underline flex items-center gap-1 transition-colors"
+                    >
+                      <span>Source: Wikipedia</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-card space-y-3">
               <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
                 <Building2 className="w-4 h-4 text-brand-600" />
