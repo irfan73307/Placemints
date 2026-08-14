@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const prisma = require('../db');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt');
+const { detectBranchFromEmail } = require('../utils/programCodeMap');
 
 function getGoogleClientId() {
   return process.env.GOOGLE_CLIENT_ID ? process.env.GOOGLE_CLIENT_ID.trim() : '';
@@ -117,6 +118,7 @@ function computeGraduationYearFromEmail(email) {
     const userRole = isAdmin ? 'ADMIN' : 'STUDENT';
     const computedBatch = computeGraduationYearFromEmail(email);
     const rollNo = email.split('@')[0];
+    const detectedBranch = detectBranchFromEmail(email) || 'CSE';
 
     // 4. Upsert user in database with verified Google email
     let user = null;
@@ -134,8 +136,8 @@ function computeGraduationYearFromEmail(email) {
             googleId,
             rollNo,
             rollNumber: rollNo,
-            branch: '',
-            department: '',
+            branch: detectedBranch,
+            department: detectedBranch,
             batchYear: computedBatch,
             graduationYear: computedBatch,
             cgpa: '',
@@ -146,7 +148,7 @@ function computeGraduationYearFromEmail(email) {
             profileCompleted: false,
           },
         });
-        console.log(`[OAuth 5/6] Created new database user record for: ${email} (ID: ${user.id})`);
+        console.log(`[OAuth 5/6] Created new database user record for: ${email} (ID: ${user.id}, Branch: ${detectedBranch})`);
       } else {
         user = await prisma.user.update({
           where: { email },
@@ -154,6 +156,8 @@ function computeGraduationYearFromEmail(email) {
             googleId,
             avatar: picture || user.avatar,
             avatarUrl: picture || user.avatarUrl,
+            branch: user.branch || detectedBranch,
+            department: user.department || detectedBranch,
             role: isAdmin ? 'ADMIN' : user.role,
             isPrimaryAdmin: isAdmin ? true : user.isPrimaryAdmin,
           },
@@ -171,8 +175,8 @@ function computeGraduationYearFromEmail(email) {
         avatarUrl: picture,
         rollNo,
         rollNumber: rollNo,
-        branch: '',
-        department: '',
+        branch: detectedBranch,
+        department: detectedBranch,
         batchYear: computedBatch,
         graduationYear: computedBatch,
         cgpa: '',
@@ -244,6 +248,7 @@ async function register(req, res) {
     const isAdmin = normalizedEmail === '127015088@sastra.ac.in';
     const passwordHash = await bcrypt.hash(password, 10);
     const computedBatch = computeGraduationYearFromEmail(normalizedEmail);
+    const detectedBranch = detectBranchFromEmail(normalizedEmail) || 'CSE';
 
     const user = await prisma.user.create({
       data: {
@@ -255,8 +260,8 @@ async function register(req, res) {
         avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(fullName)}`,
         rollNo: rollPart,
         rollNumber: rollPart,
-        branch: '',
-        department: '',
+        branch: detectedBranch,
+        department: detectedBranch,
         batchYear: computedBatch,
         graduationYear: computedBatch,
         cgpa: '',
@@ -516,6 +521,9 @@ function formatUserResponse(user) {
   const isPrimary = user.email && user.email.toLowerCase().trim() === '127015088@sastra.ac.in';
   const role = isPrimary ? 'ADMIN' : (user.role || 'STUDENT').toUpperCase();
   const isPrimaryAdmin = isPrimary ? true : (user.isPrimaryAdmin || false);
+  const rawBranch = user.department || user.branch || detectBranchFromEmail(user.email) || 'CSE';
+  const rawRoll = user.rollNumber || user.rollNo || (user.email ? user.email.split('@')[0] : '');
+  const gradYear = user.graduationYear || user.batchYear || 2026;
 
   return {
     id: user.id,
@@ -526,20 +534,22 @@ function formatUserResponse(user) {
     isPrimaryAdmin,
     avatar: user.avatar || user.avatarUrl,
     avatarUrl: user.avatar || user.avatarUrl,
-    department: user.department || user.branch || 'CSE',
+    department: rawBranch,
     degree: user.degree || 'B.Tech',
-    graduationYear: user.graduationYear || user.batchYear || 2026,
+    graduationYear: gradYear,
+    batchYear: gradYear,
     section: user.section || 'A',
-    rollNumber: user.rollNumber || user.rollNo || '',
+    rollNumber: rawRoll,
+    rollNo: rawRoll,
     cgpa: user.cgpa || '8.50',
     placementGoal: user.placementGoal || user.targetRole || 'Software Engineer',
     targetRole: user.placementGoal || user.targetRole || 'Software Engineer',
-    branch: user.department || user.branch || 'CSE',
-    batch: String(user.graduationYear || user.batchYear || 2026),
-    interestedRoles: user.interestedRoles ? user.interestedRoles.split(',').map((s) => s.trim()) : [],
-    programmingLanguages: user.programmingLanguages ? user.programmingLanguages.split(',').map((s) => s.trim()) : [],
-    frameworks: user.frameworks ? user.frameworks.split(',').map((s) => s.trim()) : [],
-    technologies: user.technologies ? user.technologies.split(',').map((s) => s.trim()) : [],
+    branch: rawBranch,
+    batch: String(gradYear),
+    interestedRoles: user.interestedRoles ? (Array.isArray(user.interestedRoles) ? user.interestedRoles : user.interestedRoles.split(',').map((s) => s.trim())) : [],
+    programmingLanguages: user.programmingLanguages ? (Array.isArray(user.programmingLanguages) ? user.programmingLanguages : user.programmingLanguages.split(',').map((s) => s.trim())) : [],
+    frameworks: user.frameworks ? (Array.isArray(user.frameworks) ? user.frameworks : user.frameworks.split(',').map((s) => s.trim())) : [],
+    technologies: user.technologies ? (Array.isArray(user.technologies) ? user.technologies : user.technologies.split(',').map((s) => s.trim())) : [],
     github: user.github || '',
     linkedin: user.linkedin || '',
     leetcode: user.leetcode || '',

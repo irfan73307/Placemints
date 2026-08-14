@@ -15,6 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { updateProfile } from '../services/userService';
 import { calculateProfileCompletion, SASTRA_DEPARTMENTS } from '../utils/profileCompletion';
+import { detectBranchFromEmail } from '../utils/programCodeMap';
 import { ROUTES } from '../constants/routes';
 import { 
   User, 
@@ -51,45 +52,81 @@ export function getGraduationYearFromEmailOrRoll(emailOrRoll) {
   return '';
 }
 
+function resolveDepartmentOption(rawDept) {
+  if (!rawDept) return '';
+  const clean = String(rawDept).trim().toLowerCase();
+  const match = SASTRA_DEPARTMENTS.find(
+    (d) =>
+      d.toLowerCase() === clean ||
+      d.toLowerCase().includes(`(${clean})`) ||
+      d.toLowerCase().includes(clean) ||
+      clean.includes(d.toLowerCase())
+  );
+  return match || rawDept;
+}
+
 export function ProfileSetup() {
   const { user, updateUserData } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
 
   const defaultRollNumber = user?.rollNumber || user?.rollNo || (user?.email ? user.email.split('@')[0] : '');
-  const computedGraduationYear = user?.graduationYear || user?.batchYear || getGraduationYearFromEmailOrRoll(user?.email || defaultRollNumber);
+  const computedGraduationYear = user?.graduationYear || user?.batchYear || getGraduationYearFromEmailOrRoll(user?.email || defaultRollNumber) || 2026;
+  const detectedBranch = detectBranchFromEmail(user?.email || defaultRollNumber) || '';
+  const initialDepartment = resolveDepartmentOption(user?.department || user?.branch || detectedBranch) || 'Information Technology (IT)';
 
   // Personal & Academic State
   const [fullName, setFullName] = useState(user?.name || user?.fullName || '');
   const [avatar, setAvatar] = useState(user?.avatar || user?.avatarUrl || '');
-  const [department, setDepartment] = useState(user?.department || user?.branch || '');
+  const [department, setDepartment] = useState(initialDepartment);
   const [degree, setDegree] = useState(user?.degree || 'B.Tech');
   const [graduationYear, setGraduationYear] = useState(computedGraduationYear);
-  const [section, setSection] = useState(user?.section || '');
+  const [section, setSection] = useState(user?.section || 'A');
   const [rollNumber, setRollNumber] = useState(defaultRollNumber);
-  const [cgpa, setCgpa] = useState(user?.cgpa || '');
-  const [placementGoal, setPlacementGoal] = useState(user?.placementGoal || user?.targetRole || '');
+  const [cgpa, setCgpa] = useState(user?.cgpa || '8.50');
+  const [placementGoal, setPlacementGoal] = useState(user?.placementGoal || user?.targetRole || 'Software Engineer');
+
+  // Sync state when user object updates
+  React.useEffect(() => {
+    if (user) {
+      if (user.fullName || user.name) setFullName(user.fullName || user.name);
+      if (user.avatar || user.avatarUrl) setAvatar(user.avatar || user.avatarUrl);
+      const userRoll = user.rollNumber || user.rollNo || (user.email ? user.email.split('@')[0] : '');
+      if (userRoll) setRollNumber(userRoll);
+
+      const branchDetected = detectBranchFromEmail(user.email || userRoll) || '';
+      const deptResolved = resolveDepartmentOption(user.department || user.branch || branchDetected);
+      if (deptResolved) setDepartment(deptResolved);
+
+      if (user.degree) setDegree(user.degree);
+      if (user.section) setSection(user.section);
+      if (user.cgpa) setCgpa(user.cgpa);
+      if (user.placementGoal || user.targetRole) setPlacementGoal(user.placementGoal || user.targetRole);
+      const gradYear = user.graduationYear || user.batchYear || getGraduationYearFromEmailOrRoll(user.email || userRoll);
+      if (gradYear) setGraduationYear(gradYear);
+    }
+  }, [user]);
 
   // Career & Skills State
   const [interestedRoles, setInterestedRoles] = useState(
     user?.interestedRoles && Array.isArray(user.interestedRoles) && user.interestedRoles.length > 0
       ? user.interestedRoles
-      : []
+      : ['Software Engineer']
   );
   const [programmingLanguages, setProgrammingLanguages] = useState(
     user?.programmingLanguages
       ? (Array.isArray(user.programmingLanguages) ? user.programmingLanguages.join(', ') : user.programmingLanguages)
-      : ''
+      : 'Java, Python, C++'
   );
   const [frameworks, setFrameworks] = useState(
     user?.frameworks
       ? (Array.isArray(user.frameworks) ? user.frameworks.join(', ') : user.frameworks)
-      : ''
+      : 'React, Node.js, Express'
   );
   const [technologies, setTechnologies] = useState(
     user?.technologies
       ? (Array.isArray(user.technologies) ? user.technologies.join(', ') : user.technologies)
-      : ''
+      : 'Git, Docker, PostgreSQL'
   );
 
   // Coding Profiles State
@@ -124,6 +161,17 @@ export function ProfileSetup() {
       }
     }
 
+    // Auto-detect branch from roll number if at least 6 digits
+    if (numericVal.length >= 6) {
+      const branchCode = detectBranchFromEmail(numericVal);
+      if (branchCode) {
+        const matched = resolveDepartmentOption(branchCode);
+        if (matched) {
+          setDepartment(matched);
+        }
+      }
+    }
+
     if (numericVal.length > 0 && numericVal.length !== 9) {
       setRollError('Roll Number must be exactly 9 digits (e.g. 127015088).');
     } else {
@@ -145,6 +193,14 @@ export function ProfileSetup() {
       return;
     }
 
+    if (cgpa && String(cgpa).trim()) {
+      const parsed = parseFloat(String(cgpa).trim());
+      if (isNaN(parsed) || parsed < 0 || parsed > 10) {
+        toast.error('CGPA must be a valid number between 0.00 and 10.00.');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const payload = {
@@ -152,11 +208,14 @@ export function ProfileSetup() {
         name: fullName,
         avatar: avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(fullName)}`,
         department,
+        branch: department,
         degree,
         graduationYear: parseInt(graduationYear),
+        batchYear: parseInt(graduationYear),
         section,
         rollNumber,
-        cgpa,
+        rollNo: rollNumber,
+        cgpa: cgpa ? parseFloat(cgpa).toFixed(2) : '8.50',
         placementGoal,
         targetRole: placementGoal,
         interestedRoles: interestedRoles.join(', '),

@@ -16,7 +16,6 @@ import { Badge } from '../components/Badge';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { updateProfile } from '../services/userService';
-import { fetchGitHubStats, fetchCodeforcesStats, fetchLeetCodeStats } from '../services/codingProfileService';
 import { calculateProfileCompletion, SASTRA_DEPARTMENTS } from '../utils/profileCompletion';
 import { getFormattedDepartment } from '../utils/departmentUtils';
 import apiClient from '../services/api';
@@ -60,7 +59,7 @@ export function Profile() {
   // Form State
   const [fullName, setFullName] = useState('');
   const [avatar, setAvatar] = useState('');
-  const [department, setDepartment] = useState('Computer Science');
+  const [department, setDepartment] = useState('Information Technology (IT)');
   const [degree, setDegree] = useState('B.Tech');
   const [graduationYear, setGraduationYear] = useState(2026);
   const [section, setSection] = useState('A');
@@ -87,16 +86,11 @@ export function Profile() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  // Live Coding Stats State
-  const [githubStats, setGithubStats] = useState(null);
-  const [codeforcesStats, setCodeforcesStats] = useState(null);
-  const [leetcodeStats, setLeetcodeStats] = useState(null);
-
   useEffect(() => {
     if (user) {
       setFullName(user.fullName || user.name || '');
       setAvatar(user.avatar || user.avatarUrl || '');
-      setDepartment(user.department || user.branch || 'Computer Science');
+      setDepartment(user.department || user.branch || 'Information Technology (IT)');
       setDegree(user.degree || 'B.Tech');
       setGraduationYear(user.graduationYear || user.batchYear || 2026);
       setSection(user.section || 'A');
@@ -124,11 +118,6 @@ export function Profile() {
       setCodechef(user.codechef || '');
       setResume(user.resume || '');
       setBio(user.bio || '');
-
-      // Async fetch coding stats
-      if (user.github) fetchGitHubStats(user.github).then(setGithubStats);
-      if (user.codeforces) fetchCodeforcesStats(user.codeforces).then(setCodeforcesStats);
-      if (user.leetcode) fetchLeetCodeStats(user.leetcode).then(setLeetcodeStats);
     }
   }, [user]);
 
@@ -139,7 +128,7 @@ export function Profile() {
     const numericVal = val.replace(/\D/g, '');
     setRollNumber(numericVal);
     if (numericVal.length > 0 && numericVal.length !== 9) {
-      setRollError('Roll Number must be exactly 9 digits.');
+      setRollError('Roll Number must be exactly 9 digits (e.g. 127015088).');
     } else {
       setRollError('');
     }
@@ -157,9 +146,17 @@ export function Profile() {
     e.preventDefault();
 
     if (rollNumber && !/^\d{9}$/.test(rollNumber)) {
-      setRollError('Roll Number must be exactly 9 digits.');
+      setRollError('Roll Number must be exactly 9 digits (e.g. 127015088).');
       toast.error('Please enter a valid 9-digit SASTRA Roll Number.');
       return;
+    }
+
+    if (cgpa && String(cgpa).trim()) {
+      const parsedCgpa = parseFloat(String(cgpa).trim());
+      if (isNaN(parsedCgpa) || parsedCgpa < 0 || parsedCgpa > 10) {
+        toast.error('CGPA must be a valid number between 0.00 and 10.00.');
+        return;
+      }
     }
 
     setIsSaving(true);
@@ -169,11 +166,14 @@ export function Profile() {
         name: fullName,
         avatar,
         department,
+        branch: department,
         degree,
         graduationYear: parseInt(graduationYear),
+        batchYear: parseInt(graduationYear),
         section,
         rollNumber,
-        cgpa,
+        rollNo: rollNumber,
+        cgpa: cgpa ? parseFloat(cgpa).toFixed(2) : '8.50',
         placementGoal,
         targetRole: placementGoal,
         interestedRoles: interestedRoles.join(', '),
@@ -198,7 +198,7 @@ export function Profile() {
       }
     } catch (err) {
       console.error('Save profile error:', err);
-      toast.error('Failed to update profile.');
+      toast.error(err?.response?.data?.message || 'Failed to update profile.');
     } finally {
       setIsSaving(false);
     }
@@ -425,7 +425,7 @@ export function Profile() {
             </div>
           </div>
 
-          {/* Right 1 Column: Interactive Coding Platform Cards */}
+          {/* Right 1 Column: Interactive Coding Platform & Readiness Summary */}
           <div className="space-y-6">
             <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Award className="w-4 h-4 text-amber-500" />
@@ -440,7 +440,7 @@ export function Profile() {
                   <h3 className="font-bold text-sm text-slate-900 dark:text-white">LeetCode</h3>
                 </div>
                 {leetcode ? (
-                  <a href={leetcode} target="_blank" rel="noreferrer" className="text-xs text-brand-600 dark:text-brand-400 font-semibold hover:underline flex items-center gap-1">
+                  <a href={leetcode.startsWith('http') ? leetcode : `https://leetcode.com/${leetcode}`} target="_blank" rel="noreferrer" className="text-xs text-brand-600 dark:text-brand-400 font-semibold hover:underline flex items-center gap-1">
                     <span>Profile</span>
                     <ExternalLink className="w-3 h-3" />
                   </a>
@@ -449,26 +449,18 @@ export function Profile() {
                 )}
               </div>
 
-              {leetcodeStats ? (
-                <div className="space-y-2.5">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-500 dark:text-slate-400">Total Solved</span>
-                    <span className="font-extrabold text-slate-900 dark:text-white">{leetcodeStats.totalSolved} Problems</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-1.5 text-center text-[11px]">
-                    <div className="p-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 rounded-lg font-bold">
-                      Easy: {leetcodeStats.easySolved}
-                    </div>
-                    <div className="p-1.5 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 rounded-lg font-bold">
-                      Med: {leetcodeStats.mediumSolved}
-                    </div>
-                    <div className="p-1.5 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 rounded-lg font-bold">
-                      Hard: {leetcodeStats.hardSolved}
-                    </div>
-                  </div>
+              {leetcode ? (
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700/60 text-center space-y-1">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[10px] font-bold">
+                    <Sparkles className="w-3 h-3" />
+                    <span>Stats sync coming soon</span>
+                  </span>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Live GraphQL problem-solving metrics will sync here in Phase 2.
+                  </p>
                 </div>
               ) : (
-                <p className="text-xs text-slate-400">Link your LeetCode handle to sync solved stats.</p>
+                <p className="text-xs text-slate-400">Link your LeetCode profile URL in Edit Profile to sync stats.</p>
               )}
             </div>
 
@@ -480,7 +472,7 @@ export function Profile() {
                   <h3 className="font-bold text-sm text-slate-900 dark:text-white">GitHub</h3>
                 </div>
                 {github ? (
-                  <a href={github} target="_blank" rel="noreferrer" className="text-xs text-brand-600 dark:text-brand-400 font-semibold hover:underline flex items-center gap-1">
+                  <a href={github.startsWith('http') ? github : `https://github.com/${github}`} target="_blank" rel="noreferrer" className="text-xs text-brand-600 dark:text-brand-400 font-semibold hover:underline flex items-center gap-1">
                     <span>Profile</span>
                     <ExternalLink className="w-3 h-3" />
                   </a>
@@ -489,23 +481,50 @@ export function Profile() {
                 )}
               </div>
 
-              {githubStats ? (
-                <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                  <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                    <span className="text-slate-400 block text-[10px]">Repos</span>
-                    <span className="font-extrabold text-slate-900 dark:text-white">{githubStats.publicRepos}</span>
-                  </div>
-                  <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                    <span className="text-slate-400 block text-[10px]">Followers</span>
-                    <span className="font-extrabold text-slate-900 dark:text-white">{githubStats.followers}</span>
-                  </div>
-                  <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                    <span className="text-slate-400 block text-[10px]">Following</span>
-                    <span className="font-extrabold text-slate-900 dark:text-white">{githubStats.following}</span>
-                  </div>
+              {github ? (
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700/60 text-center space-y-1">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-bold">
+                    <Sparkles className="w-3 h-3" />
+                    <span>Stats sync coming soon</span>
+                  </span>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Public repositories and commit analytics will sync in Phase 2.
+                  </p>
                 </div>
               ) : (
                 <p className="text-xs text-slate-400">Link your GitHub profile URL to sync repositories.</p>
+              )}
+            </div>
+
+            {/* CodeChef Card */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-card space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Award className="w-4 h-4 text-amber-600" />
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">CodeChef</h3>
+                </div>
+                {codechef ? (
+                  <a href={codechef.startsWith('http') ? codechef : `https://www.codechef.com/users/${codechef}`} target="_blank" rel="noreferrer" className="text-xs text-brand-600 dark:text-brand-400 font-semibold hover:underline flex items-center gap-1">
+                    <span>Profile</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                ) : (
+                  <span className="text-[11px] text-slate-400">Not linked</span>
+                )}
+              </div>
+
+              {codechef ? (
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700/60 text-center space-y-1">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[10px] font-bold">
+                    <Sparkles className="w-3 h-3" />
+                    <span>Stats sync coming soon</span>
+                  </span>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Contest stars and division rating metrics will sync in Phase 2.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400">Link your CodeChef handle to sync rating.</p>
               )}
             </div>
 
@@ -517,7 +536,7 @@ export function Profile() {
                   <h3 className="font-bold text-sm text-slate-900 dark:text-white">Codeforces</h3>
                 </div>
                 {codeforces ? (
-                  <a href={codeforces} target="_blank" rel="noreferrer" className="text-xs text-brand-600 dark:text-brand-400 font-semibold hover:underline flex items-center gap-1">
+                  <a href={codeforces.startsWith('http') ? codeforces : `https://codeforces.com/profile/${codeforces}`} target="_blank" rel="noreferrer" className="text-xs text-brand-600 dark:text-brand-400 font-semibold hover:underline flex items-center gap-1">
                     <span>Profile</span>
                     <ExternalLink className="w-3 h-3" />
                   </a>
@@ -526,16 +545,15 @@ export function Profile() {
                 )}
               </div>
 
-              {codeforcesStats ? (
-                <div className="grid grid-cols-2 gap-2 text-center text-xs">
-                  <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                    <span className="text-slate-400 block text-[10px]">Rating</span>
-                    <span className="font-extrabold text-indigo-600 dark:text-indigo-400">{codeforcesStats.rating}</span>
-                  </div>
-                  <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                    <span className="text-slate-400 block text-[10px]">Rank</span>
-                    <span className="font-extrabold text-slate-800 dark:text-slate-200 capitalize">{codeforcesStats.rank}</span>
-                  </div>
+              {codeforces ? (
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700/60 text-center space-y-1">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold">
+                    <Sparkles className="w-3 h-3" />
+                    <span>Stats sync coming soon</span>
+                  </span>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Competitive rating and contest rank tier will sync in Phase 2.
+                  </p>
                 </div>
               ) : (
                 <p className="text-xs text-slate-400">Link your Codeforces handle to sync contest ratings.</p>
@@ -550,13 +568,34 @@ export function Profile() {
                   <h3 className="font-bold text-sm text-slate-900 dark:text-white">LinkedIn</h3>
                 </div>
                 {linkedin ? (
-                  <a href={linkedin} target="_blank" rel="noreferrer" className="text-xs text-brand-600 dark:text-brand-400 font-semibold hover:underline flex items-center gap-1">
+                  <a href={linkedin.startsWith('http') ? linkedin : `https://www.linkedin.com/in/${linkedin}`} target="_blank" rel="noreferrer" className="text-xs text-brand-600 dark:text-brand-400 font-semibold hover:underline flex items-center gap-1">
                     <span>View Profile</span>
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 ) : (
                   <span className="text-[11px] text-slate-400">Not linked</span>
                 )}
+              </div>
+            </div>
+
+            {/* Placement Readiness Card */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-card space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Target className="w-4 h-4 text-emerald-600" />
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">Placement Readiness</h3>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+                  Phase 2
+                </span>
+              </div>
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700/60 text-center space-y-1">
+                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  AI & Placement Readiness analysis coming soon
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Algorithmic radar, company-specific fit & interview readiness metrics will appear here.
+                </p>
               </div>
             </div>
           </div>
@@ -639,6 +678,7 @@ export function Profile() {
                 label="CGPA *"
                 value={cgpa}
                 onChange={(e) => setCgpa(e.target.value)}
+                placeholder="e.g. 8.50"
                 required
               />
             </div>
@@ -673,16 +713,45 @@ export function Profile() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Input
+                label="Programming Languages"
+                value={programmingLanguages}
+                onChange={(e) => setProgrammingLanguages(e.target.value)}
+                placeholder="e.g. Java, Python, C++"
+              />
+              <Input
+                label="Frameworks & Libraries"
+                value={frameworks}
+                onChange={(e) => setFrameworks(e.target.value)}
+                placeholder="e.g. React, Node.js, Spring Boot"
+              />
+              <Input
+                label="Developer Tools & Technologies"
+                value={technologies}
+                onChange={(e) => setTechnologies(e.target.value)}
+                placeholder="e.g. Git, Docker, AWS"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Input
                 label="LeetCode Profile URL"
                 value={leetcode}
                 onChange={(e) => setLeetcode(e.target.value)}
+                placeholder="https://leetcode.com/username"
+              />
+              <Input
+                label="CodeChef Handle / URL"
+                value={codechef}
+                onChange={(e) => setCodechef(e.target.value)}
+                placeholder="https://www.codechef.com/users/handle"
               />
               <Input
                 label="Codeforces Handle / URL"
                 value={codeforces}
                 onChange={(e) => setCodeforces(e.target.value)}
+                placeholder="https://codeforces.com/profile/handle"
               />
             </div>
 
@@ -691,18 +760,21 @@ export function Profile() {
                 label="GitHub Profile URL"
                 value={github}
                 onChange={(e) => setGithub(e.target.value)}
+                placeholder="https://github.com/username"
               />
               <Input
                 label="LinkedIn Profile URL"
                 value={linkedin}
                 onChange={(e) => setLinkedin(e.target.value)}
+                placeholder="https://linkedin.com/in/username"
               />
             </div>
 
             <Input
-              label="Resume URL (Google Drive Link)"
+              label="Resume URL (PDF / Google Drive Link)"
               value={resume}
               onChange={(e) => setResume(e.target.value)}
+              placeholder="https://drive.google.com/..."
             />
 
             <div className="space-y-1">
@@ -711,6 +783,7 @@ export function Profile() {
                 rows={3}
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
+                placeholder="Brief introduction about your placement aspirations and technical interests..."
                 className="w-full p-3 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
               />
             </div>
