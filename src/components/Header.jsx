@@ -49,7 +49,7 @@ export function Header() {
     },
   ];
 
-  const deptInfo = getFormattedDepartment(user?.department || user?.branch);
+  const deptInfo = getFormattedDepartment(user?.department || user?.branch, user);
 
   return (
     <header className="sticky top-0 z-30 h-16 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 lg:px-8 flex items-center justify-between transition-colors shadow-subtle font-sans">

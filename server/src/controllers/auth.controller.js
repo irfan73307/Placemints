@@ -522,9 +522,15 @@ function formatUserResponse(user) {
   const role = isPrimary ? 'ADMIN' : (user.role || 'STUDENT').toUpperCase();
   const isPrimaryAdmin = isPrimary ? true : (user.isPrimaryAdmin || false);
   const parsedRoll = parseRollNumber(user.email || user.rollNumber || user.rollNo);
-  const rawBranch = user.department || user.branch || parsedRoll?.branch || 'CSE';
+  let rawBranch = user.department || user.branch;
+  if (!rawBranch || ((rawBranch === 'CSE' || rawBranch.toLowerCase() === 'computer science') && parsedRoll?.branch && parsedRoll.branch !== 'CSE')) {
+    rawBranch = parsedRoll?.branch || rawBranch || 'CSE';
+  }
   const rawRoll = user.rollNumber || user.rollNo || (user.email ? user.email.split('@')[0] : '');
-  const gradYear = user.graduationYear || user.batchYear || parsedRoll?.graduationYear || 2026;
+  let gradYear = user.graduationYear || user.batchYear;
+  if (!gradYear || (gradYear === 2026 && parsedRoll?.graduationYear && parsedRoll.graduationYear !== 2026)) {
+    gradYear = parsedRoll?.graduationYear || gradYear || 2026;
+  }
 
   return {
     id: user.id,

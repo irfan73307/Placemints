@@ -18,6 +18,7 @@ import { useToast } from '../contexts/ToastContext';
 import { updateProfile } from '../services/userService';
 import { calculateProfileCompletion, SASTRA_DEPARTMENTS } from '../utils/profileCompletion';
 import { getFormattedDepartment } from '../utils/departmentUtils';
+import { parseRollNumber } from '../utils/programCodeMap';
 import apiClient from '../services/api';
 import { 
   User, 
@@ -90,11 +91,23 @@ export function Profile() {
     if (user) {
       setFullName(user.fullName || user.name || '');
       setAvatar(user.avatar || user.avatarUrl || '');
-      setDepartment(user.department || user.branch || 'Information Technology (IT)');
+      
+      const parsed = parseRollNumber(user.email || user.rollNumber || user.rollNo);
+      let userDept = user.department || user.branch;
+      if (!userDept || ((userDept === 'CSE' || userDept.toLowerCase() === 'computer science') && parsed?.branch && parsed.branch !== 'CSE')) {
+        userDept = parsed?.branch || userDept || 'Information Technology (IT)';
+      }
+      setDepartment(userDept);
       setDegree(user.degree || 'B.Tech');
-      setGraduationYear(user.graduationYear || user.batchYear || 2026);
+
+      let userGradYear = user.graduationYear || user.batchYear;
+      if (!userGradYear || (userGradYear === 2026 && parsed?.graduationYear && parsed.graduationYear !== 2026)) {
+        userGradYear = parsed?.graduationYear || userGradYear || 2026;
+      }
+      setGraduationYear(userGradYear);
+
       setSection(user.section || 'A');
-      setRollNumber(user.rollNumber || user.rollNo || '');
+      setRollNumber(user.rollNumber || user.rollNo || (user.email ? user.email.split('@')[0] : ''));
       setCgpa(user.cgpa || '8.50');
       setPlacementGoal(user.placementGoal || user.targetRole || 'Software Engineer');
       setInterestedRoles(
@@ -122,7 +135,7 @@ export function Profile() {
   }, [user]);
 
   const completion = calculateProfileCompletion(user);
-  const formattedDept = getFormattedDepartment(department);
+  const formattedDept = getFormattedDepartment(department, user);
 
   const handleRollChange = (val) => {
     const numericVal = val.replace(/\D/g, '');

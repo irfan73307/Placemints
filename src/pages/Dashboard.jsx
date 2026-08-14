@@ -65,7 +65,7 @@ export function Dashboard() {
   }, []);
 
   const completion = calculateProfileCompletion(user);
-  const formattedDept = getFormattedDepartment(user?.department || user?.branch);
+  const formattedDept = getFormattedDepartment(user?.department || user?.branch, user);
 
   // Checklist items completion status
   const checklistItems = [

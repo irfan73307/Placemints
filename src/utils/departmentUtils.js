@@ -146,8 +146,32 @@ const DEPARTMENT_MAP = [
   },
 ];
 
-export function getFormattedDepartment(deptInput) {
-  if (!deptInput || typeof deptInput !== 'string') {
+import { parseRollNumber } from './programCodeMap';
+
+export function getFormattedDepartment(deptInput, userOrRoll) {
+  let detected = null;
+  let rawDept = deptInput;
+
+  if (typeof deptInput === 'object' && deptInput !== null) {
+    const u = deptInput;
+    const parsed = parseRollNumber(u.email || u.rollNumber || u.rollNo);
+    detected = parsed?.branch;
+    rawDept = u.department || u.branch;
+  } else if (userOrRoll) {
+    const parsed = parseRollNumber(
+      typeof userOrRoll === 'object'
+        ? userOrRoll.email || userOrRoll.rollNumber || userOrRoll.rollNo
+        : userOrRoll
+    );
+    detected = parsed?.branch;
+  }
+
+  // If rawDept is missing or default 'CSE'/'Computer Science' while detected is non-CSE, resolve to detected
+  if (!rawDept || ((rawDept === 'CSE' || rawDept.toLowerCase() === 'computer science') && detected && detected !== 'CSE')) {
+    if (detected) rawDept = detected;
+  }
+
+  if (!rawDept || typeof rawDept !== 'string') {
     return {
       desktop: 'General Engineering',
       mobile: 'ENGG',
@@ -155,7 +179,7 @@ export function getFormattedDepartment(deptInput) {
     };
   }
 
-  const normalized = deptInput.toLowerCase().trim();
+  const normalized = rawDept.toLowerCase().trim();
 
   for (const item of DEPARTMENT_MAP) {
     if (item.keys.some((k) => normalized.includes(k) || k.includes(normalized))) {
@@ -169,9 +193,9 @@ export function getFormattedDepartment(deptInput) {
 
   // Custom fallback
   return {
-    desktop: deptInput,
-    mobile: deptInput.length > 8 ? `${deptInput.substring(0, 6)}...` : deptInput,
-    code: deptInput.substring(0, 4).toUpperCase(),
+    desktop: rawDept,
+    mobile: rawDept.length > 8 ? `${rawDept.substring(0, 6)}...` : rawDept,
+    code: rawDept.substring(0, 4).toUpperCase(),
   };
 }
 
