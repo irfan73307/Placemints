@@ -25,11 +25,33 @@ import {
   HelpCircle, 
   FileText, 
   Layers, 
-  Sparkles,
-  ArrowLeft,
-  Star,
-  Award
+  Sparkles, 
+  ArrowLeft, 
+  Star, 
+  Award,
+  LayoutGrid,
+  Hash,
+  GitFork,
+  Code2,
+  Database,
+  Link2,
+  Tag
 } from 'lucide-react';
+
+// Topic to Lucide icon resolver
+function getTopicIcon(topic = '') {
+  const t = String(topic).toLowerCase().trim();
+  if (t.includes('array') || t.includes('matrix') || t.includes('grid')) return LayoutGrid;
+  if (t.includes('hash') || t.includes('map') || t.includes('set') || t.includes('dict')) return Hash;
+  if (t.includes('tree') || t.includes('bst') || t.includes('trie') || t.includes('graph') || t.includes('dfs') || t.includes('bfs')) return GitFork;
+  if (t.includes('string') || t.includes('text') || t.includes('pattern') || t.includes('parsing')) return Code2;
+  if (t.includes('dbms') || t.includes('sql') || t.includes('database') || t.includes('query')) return Database;
+  if (t.includes('stack') || t.includes('queue') || t.includes('heap') || t.includes('priority')) return Layers;
+  if (t.includes('dp') || t.includes('dynamic') || t.includes('greedy') || t.includes('recursion') || t.includes('backtrack')) return Sparkles;
+  if (t.includes('system') || t.includes('os') || t.includes('design') || t.includes('thread') || t.includes('concurrency') || t.includes('lld') || t.includes('hld')) return Cpu;
+  if (t.includes('link')) return Link2;
+  return Tag;
+}
 
 export function CompanyDetails() {
   const { id } = useParams();
@@ -99,6 +121,47 @@ export function CompanyDetails() {
     return unique;
   }, [company]);
 
+  const { sastraQuestionsList, generalQuestionsList } = React.useMemo(() => {
+    if (!company) return { sastraQuestionsList: [], generalQuestionsList: [] };
+
+    if (company.sastraQuestions || company.generalQuestions) {
+      return {
+        sastraQuestionsList: company.sastraQuestions || [],
+        generalQuestionsList: company.generalQuestions || [],
+      };
+    }
+
+    const rawList = company.questions || company.pyqs || [];
+    const all = rawList.map((q, idx) => {
+      const freqVal = q.likeCount || (100 - idx * 3);
+      const rawTags = q.topicTags || q.topic || ['DSA'];
+      const tags = (Array.isArray(rawTags) ? rawTags : String(rawTags).split(','))
+        .map((t) => (typeof t === 'string' ? t.trim() : String(t)))
+        .filter(Boolean);
+
+      return {
+        id: q.id || `q_${idx}`,
+        problemNumber: q.problemNumber || `#${101 + idx}`,
+        question: q.question || q.questionText || 'Practice Problem',
+        difficulty: q.difficulty || 'Easy',
+        topic: tags[0] || 'DSA',
+        topicTags: tags,
+        frequency: q.frequency || `${Math.max(60, freqVal)}%`,
+        starRating: q.starRating || '★★★★★',
+        importanceLabel: q.importanceLabel || 'Very Frequently Asked',
+        expectedRound: q.expectedRound || (q.round && q.round.title) || 'Round 2: Technical Interview (DSA & Core CS)',
+        isSastraPyq: true,
+        leetcodeUrl: q.leetcodeUrl || null,
+        hasVerifiedLink: Boolean(q.leetcodeUrl || q.hasVerifiedLink),
+      };
+    });
+
+    return {
+      sastraQuestionsList: all.slice(0, 6),
+      generalQuestionsList: all.slice(6),
+    };
+  }, [company]);
+
   if (isLoading) {
     return (
       <div className="py-20 text-center space-y-3">
@@ -120,48 +183,102 @@ export function CompanyDetails() {
     );
   }
 
-  const renderQuestionCard = (q) => (
-    <div key={q.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-card space-y-3">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
-            <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono text-xs font-bold">
-              {q.problemNumber}
+
+  const renderQuestionCard = (q, idx) => {
+    const rawTags = q.topicTags || q.topic || [];
+    const tags = (Array.isArray(rawTags) ? rawTags : String(rawTags).split(','))
+      .map((t) => (typeof t === 'string' ? t.trim() : String(t)))
+      .filter(Boolean);
+
+    const problemNum = q.problemNumber || `#${101 + (idx || 0)}`;
+    const frequency = q.frequency || '100%';
+    const starRating = q.starRating || '★★★★★';
+    const importanceLabel = q.importanceLabel || 'Very Frequently Asked';
+    const expectedRound = q.expectedRound || 'Round 2: Technical Interview (DSA & Core CS)';
+    const hasLink = Boolean(q.leetcodeUrl || q.hasVerifiedLink);
+
+    return (
+      <div
+        key={q.id || idx}
+        className="bg-white dark:bg-[#070e1e] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-card hover:border-slate-300 dark:hover:border-slate-700/80 transition-all space-y-3"
+      >
+        {/* Row 1: Problem #, Title, and Action/Status Badges */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono text-xs font-bold border border-slate-200 dark:border-slate-700/50">
+              {problemNum}
             </span>
-            <h3 className="font-bold text-sm text-slate-900 dark:text-white">{q.question}</h3>
+            <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+              {q.question}
+            </h3>
           </div>
-          <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 pl-1">
-            <span className="text-amber-500 font-bold tracking-wider">{q.starRating}</span>
-            <span className="font-medium text-slate-600 dark:text-slate-300">{q.importanceLabel}</span>
-            <span>•</span>
-            <span className="text-indigo-600 dark:text-indigo-400 font-semibold">{q.expectedRound}</span>
+
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            {/* Difficulty Pill */}
+            <span
+              className={`px-3 py-0.5 rounded-full text-xs font-semibold border ${
+                q.difficulty === 'Hard'
+                  ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800/60'
+                  : q.difficulty === 'Medium'
+                  ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/60'
+                  : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/60'
+              }`}
+            >
+              {q.difficulty || 'Easy'}
+            </span>
+
+            {/* Frequency Badge */}
+            <span className="px-3 py-1 rounded-xl text-xs font-medium bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
+              Freq: {frequency}
+            </span>
+
+            {/* LeetCode / Verified Link */}
+            {hasLink ? (
+              <a
+                href={q.leetcodeUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-500/30 font-semibold text-xs hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors"
+              >
+                <span>LeetCode</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            ) : (
+              <span className="inline-flex items-center px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-800 text-xs font-medium">
+                No verified link
+              </span>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
-          <Badge variant={q.difficulty === 'Hard' ? 'danger' : q.difficulty === 'Medium' ? 'warning' : 'success'}>
-            {q.difficulty}
-          </Badge>
-          <Badge variant="neutral">Freq: {q.frequency}</Badge>
-          {q.hasVerifiedLink ? (
-            <a
-              href={q.leetcodeUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-300 font-semibold text-xs hover:bg-brand-100 dark:hover:bg-brand-900 transition-colors"
-            >
-              <span>LeetCode</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          ) : (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-xs font-medium">
-              No verified link
-            </span>
-          )}
+        {/* Row 2: Stars, Importance Label, Round */}
+        <div className="flex items-center gap-2.5 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+          <span className="text-amber-500 font-bold tracking-wider">{starRating}</span>
+          <span className="font-medium text-slate-600 dark:text-slate-300">{importanceLabel}</span>
+          <span className="text-slate-400 dark:text-slate-600">•</span>
+          <span className="text-indigo-600 dark:text-indigo-400 font-semibold">{expectedRound}</span>
         </div>
+
+        {/* Row 3: Question Topic Tags (e.g. [icon] Arrays, [#] HashMap) */}
+        {tags.length > 0 && (
+          <div className="flex items-center gap-2.5 flex-wrap pt-0.5">
+            {tags.map((tag, tagIdx) => {
+              const TagIcon = getTopicIcon(tag);
+              return (
+                <span
+                  key={tagIdx}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-50 dark:bg-[#0a2328]/70 border border-teal-200 dark:border-[#114b4f] text-teal-700 dark:text-[#2dd4bf] text-xs font-medium hover:border-teal-400 dark:hover:border-teal-500/50 transition-colors shadow-sm"
+                >
+                  <TagIcon className="w-3.5 h-3.5 text-teal-600 dark:text-[#2dd4bf] shrink-0" />
+                  <span>{tag}</span>
+                </span>
+              );
+            })}
+          </div>
+        )}
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-8 animate-fadeIn pb-12">
@@ -322,7 +439,7 @@ export function CompanyDetails() {
       {activeTab === 'pyqs' && (
         <div className="space-y-8">
           {/* 1. SASTRA Previous Interview Questions Section (FIRST) */}
-          {company.sastraQuestions && company.sastraQuestions.length > 0 && (
+          {sastraQuestionsList.length > 0 && (
             <div className="space-y-4">
               <div className="p-4 bg-brand-50/60 dark:bg-brand-950/40 rounded-2xl border border-brand-200 dark:border-brand-800/50 flex items-center gap-3">
                 <Award className="w-6 h-6 text-brand-600 dark:text-brand-400 shrink-0" />
@@ -337,19 +454,19 @@ export function CompanyDetails() {
               </div>
 
               <div className="space-y-4">
-                {company.sastraQuestions.map(renderQuestionCard)}
+                {sastraQuestionsList.map((q, idx) => renderQuestionCard(q, idx))}
               </div>
             </div>
           )}
 
           {/* 2. General LeetCode & DSA Questions Section */}
-          {company.generalQuestions && company.generalQuestions.length > 0 && (
+          {generalQuestionsList.length > 0 && (
             <div className="space-y-4">
               <h3 className="font-bold text-sm text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-800">
-                General LeetCode & Practice Problems ({company.generalQuestions.length})
+                General LeetCode & Practice Problems ({generalQuestionsList.length})
               </h3>
               <div className="space-y-4">
-                {company.generalQuestions.map(renderQuestionCard)}
+                {generalQuestionsList.map((q, idx) => renderQuestionCard(q, sastraQuestionsList.length + idx))}
               </div>
             </div>
           )}

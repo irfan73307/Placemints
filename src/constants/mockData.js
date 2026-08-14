@@ -42,10 +42,10 @@ export const mockCompanies = [
       { id: 3, title: 'Round 3: HR & Management Interview', description: 'Behavioral assessment, relocation willingness, shift flexibility, and communication check.' },
     ],
     pyqs: [
-      { id: 'q1', question: 'Find maximum sum subarray of size K (Sliding Window)', difficulty: 'Easy', topic: 'Arrays', year: '2024' },
-      { id: 'q2', question: 'Detect and remove loop in a Singly Linked List', difficulty: 'Medium', topic: 'Linked List', year: '2024' },
-      { id: 'q3', question: 'SQL query to find 2nd highest salary using CTE and DENSE_RANK()', difficulty: 'Medium', topic: 'DBMS', year: '2023' },
-      { id: 'q4', question: 'Check if a Binary Tree is a valid Binary Search Tree (BST)', difficulty: 'Medium', topic: 'Trees', year: '2023' },
+      { id: 'q1', question: 'Maximum Number of Pairs in Array', difficulty: 'Easy', topic: 'Arrays', topicTags: ['Arrays', 'HashMap'], year: '2024', frequency: '100%', starRating: '★★★★★', importanceLabel: 'Very Frequently Asked', expectedRound: 'Round 2: Technical Interview (DSA & Core CS)' },
+      { id: 'q2', question: 'Detect and remove loop in a Singly Linked List', difficulty: 'Medium', topic: 'Linked List', topicTags: ['Linked List', 'Two Pointers'], year: '2024', frequency: '92%', starRating: '★★★★★', importanceLabel: 'Frequently Asked', expectedRound: 'Round 2: Technical Interview (DSA & Core CS)' },
+      { id: 'q3', question: 'SQL query to find 2nd highest salary using CTE and DENSE_RANK()', difficulty: 'Medium', topic: 'DBMS', topicTags: ['DBMS', 'SQL'], year: '2023', frequency: '85%', starRating: '★★★★☆', importanceLabel: 'Important', expectedRound: 'Round 2: Technical Interview (DSA & Core CS)' },
+      { id: 'q4', question: 'Check if a Binary Tree is a valid Binary Search Tree (BST)', difficulty: 'Medium', topic: 'Trees', topicTags: ['Trees', 'Binary Search Tree'], year: '2023', frequency: '80%', starRating: '★★★★☆', importanceLabel: 'Important', expectedRound: 'Round 2: Technical Interview (DSA & Core CS)' },
     ],
     resources: [
       { title: 'TCS Digital NQT Syllabus & Previous Papers', url: 'https://geeksforgeeks.org', type: 'PDF Guide' },
@@ -70,10 +70,10 @@ export const mockCompanies = [
       { id: 5, title: 'Round 5: General HR', description: 'Culture fit, career goals, team dynamics, and compensation.' },
     ],
     pyqs: [
-      { id: 'zq1', question: 'Design a Taxi Booking Application (Console LLD)', difficulty: 'Hard', topic: 'System Design', year: '2024' },
-      { id: 'zq2', question: 'Print matrix in Spiral Order without extra memory', difficulty: 'Medium', topic: 'Matrix', year: '2024' },
-      { id: 'zq3', question: 'Lookup substring matches with wildcard characters (* and ?)', difficulty: 'Medium', topic: 'Strings', year: '2023' },
-      { id: 'zq4', question: 'Evaluate Reverse Polish Notation (Stack)', difficulty: 'Medium', topic: 'Stack', year: '2023' },
+      { id: 'zq1', question: 'Design a Taxi Booking Application (Console LLD)', difficulty: 'Hard', topic: 'System Design', topicTags: ['System Design', 'LLD', 'OOP'], year: '2024' },
+      { id: 'zq2', question: 'Print matrix in Spiral Order without extra memory', difficulty: 'Medium', topic: 'Matrix', topicTags: ['Matrix', 'Arrays'], year: '2024' },
+      { id: 'zq3', question: 'Lookup substring matches with wildcard characters (* and ?)', difficulty: 'Medium', topic: 'Strings', topicTags: ['Strings', 'Recursion'], year: '2023' },
+      { id: 'zq4', question: 'Evaluate Reverse Polish Notation (Stack)', difficulty: 'Medium', topic: 'Stack', topicTags: ['Stack', 'Parsing'], year: '2023' },
     ],
     resources: [
       { title: 'Zoho Round 3 LLD System Design Patterns', url: 'https://geeksforgeeks.org', type: 'Design Guide' },
@@ -96,10 +96,10 @@ export const mockCompanies = [
       { id: 4, title: 'Round 4: Bar Raiser Interview', description: 'Deep probe into trade-offs, scalability, and strict evaluation of Leadership Principles.' },
     ],
     pyqs: [
-      { id: 'aq1', question: 'Course Schedule II (Topological Sort / Kahn Algorithm)', difficulty: 'Medium', topic: 'Graphs', year: '2024' },
-      { id: 'aq2', question: 'LRU Cache Implementation (Doubly Linked List + HashMap)', difficulty: 'Hard', topic: 'Data Structures', year: '2024' },
-      { id: 'aq3', question: 'Word Break Problem (Dynamic Programming)', difficulty: 'Medium', topic: 'DP', year: '2023' },
-      { id: 'aq4', question: 'Serialize and Deserialize Binary Tree', difficulty: 'Hard', topic: 'Trees', year: '2023' },
+      { id: 'aq1', question: 'Course Schedule II (Topological Sort / Kahn Algorithm)', difficulty: 'Medium', topic: 'Graphs', topicTags: ['Graphs', 'Topological Sort'], year: '2024' },
+      { id: 'aq2', question: 'LRU Cache Implementation (Doubly Linked List + HashMap)', difficulty: 'Hard', topic: 'Data Structures', topicTags: ['Data Structures', 'HashMap', 'Design'], year: '2024' },
+      { id: 'aq3', question: 'Word Break Problem (Dynamic Programming)', difficulty: 'Medium', topic: 'DP', topicTags: ['Dynamic Programming', 'Strings'], year: '2023' },
+      { id: 'aq4', question: 'Serialize and Deserialize Binary Tree', difficulty: 'Hard', topic: 'Trees', topicTags: ['Trees', 'Design'], year: '2023' },
     ],
     resources: [
       { title: 'Amazon 16 Leadership Principles Sheet', url: 'https://amazon.jobs', type: 'Article' },
@@ -121,9 +121,9 @@ export const mockCompanies = [
       { id: 3, title: 'Round 3: HR Interview', description: 'Document verification and career alignment discussion.' },
     ],
     pyqs: [
-      { id: 'iq1', question: 'Minimum Coins to Make Change (Greedy vs DP)', difficulty: 'Medium', topic: 'DP', year: '2024' },
-      { id: 'iq2', question: 'Find Connected Components in Undirected Graph', difficulty: 'Medium', topic: 'Graphs', year: '2024' },
-      { id: 'iq3', question: 'Longest Substring Without Repeating Characters', difficulty: 'Medium', topic: 'Strings', year: '2023' },
+      { id: 'iq1', question: 'Minimum Coins to Make Change (Greedy vs DP)', difficulty: 'Medium', topic: 'DP', topicTags: ['Dynamic Programming', 'Greedy'], year: '2024' },
+      { id: 'iq2', question: 'Find Connected Components in Undirected Graph', difficulty: 'Medium', topic: 'Graphs', topicTags: ['Graphs', 'DFS'], year: '2024' },
+      { id: 'iq3', question: 'Longest Substring Without Repeating Characters', difficulty: 'Medium', topic: 'Strings', topicTags: ['Strings', 'Sliding Window', 'HashMap'], year: '2023' },
     ],
     resources: [
       { title: 'Infosys SP Previous HackWithInfy Archives', url: 'https://geeksforgeeks.org', type: 'PDF Archive' },
@@ -144,9 +144,9 @@ export const mockCompanies = [
       { id: 3, title: 'Round 3: Technical Interview 2', description: 'Low level object-oriented design and deep dive into past project architectures.' },
     ],
     pyqs: [
-      { id: 'pq1', question: 'Design a Rate Limiter Algorithm (Token Bucket)', difficulty: 'Medium', topic: 'System Design', year: '2024' },
-      { id: 'pq2', question: 'Lowest Common Ancestor in Binary Tree', difficulty: 'Medium', topic: 'Trees', year: '2024' },
-      { id: 'pq3', question: 'Implement Producer-Consumer using Blocking Queue', difficulty: 'Medium', topic: 'OS / Threads', year: '2023' },
+      { id: 'pq1', question: 'Design a Rate Limiter Algorithm (Token Bucket)', difficulty: 'Medium', topic: 'System Design', topicTags: ['System Design', 'Rate Limiting'], year: '2024' },
+      { id: 'pq2', question: 'Lowest Common Ancestor in Binary Tree', difficulty: 'Medium', topic: 'Trees', topicTags: ['Trees', 'Binary Tree'], year: '2024' },
+      { id: 'pq3', question: 'Implement Producer-Consumer using Blocking Queue', difficulty: 'Medium', topic: 'OS / Threads', topicTags: ['OS', 'Concurrency', 'Threads'], year: '2023' },
     ],
     resources: [
       { title: 'PayPal Technical Interview Roadmap', url: 'https://paypal.com', type: 'Guide' },
