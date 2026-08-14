@@ -27,8 +27,6 @@ import {
   Layers, 
   Sparkles,
   ArrowLeft,
-  Clock,
-  Code,
   Star,
   Award
 } from 'lucide-react';
@@ -123,7 +121,7 @@ export function CompanyDetails() {
   }
 
   const renderQuestionCard = (q) => (
-    <div key={q.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-card space-y-4">
+    <div key={q.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-card space-y-3">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
@@ -140,12 +138,12 @@ export function CompanyDetails() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <Badge variant={q.difficulty === 'Hard' ? 'danger' : q.difficulty === 'Medium' ? 'warning' : 'success'}>
             {q.difficulty}
           </Badge>
           <Badge variant="neutral">Freq: {q.frequency}</Badge>
-          {q.leetcodeUrl && (
+          {q.hasVerifiedLink ? (
             <a
               href={q.leetcodeUrl}
               target="_blank"
@@ -155,22 +153,11 @@ export function CompanyDetails() {
               <span>LeetCode</span>
               <ExternalLink className="w-3 h-3" />
             </a>
+          ) : (
+            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-xs font-medium">
+              No verified link
+            </span>
           )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 space-y-1">
-          <span className="font-bold text-slate-700 dark:text-slate-300 block">Expected Approach</span>
-          <p className="text-slate-600 dark:text-slate-400">{q.expectedApproach}</p>
-        </div>
-        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 space-y-1">
-          <span className="font-bold text-slate-700 dark:text-slate-300 block">Time Complexity</span>
-          <p className="font-mono text-brand-600 dark:text-brand-400 font-bold">{q.timeComplexity}</p>
-        </div>
-        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 space-y-1">
-          <span className="font-bold text-slate-700 dark:text-slate-300 block">Space Complexity</span>
-          <p className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">{q.spaceComplexity}</p>
         </div>
       </div>
     </div>

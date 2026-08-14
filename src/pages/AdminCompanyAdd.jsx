@@ -46,19 +46,32 @@ function slugify(name) {
 function parseCsv(text) {
   const lines = text.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
-  // Accept header row (case-insensitive). Skip it.
+  // Skip header row. Columns: companyName, questionText, difficulty, topicTags, frequency, leetcodeUrl, year
+  // frequency, leetcodeUrl, year are optional — missing/blank cells are fine.
   const rows = [];
   for (let i = 1; i < lines.length; i++) {
     const cols = splitCsvLine(lines[i]);
     if (cols.length < 2) continue;
-    const [companyName, questionText, topicTags = '', difficulty = 'Medium', year = String(new Date().getFullYear())] = cols;
+    const [
+      companyName = '',
+      questionText = '',
+      difficulty = 'Medium',
+      topicTags = '',
+      frequency = '',
+      leetcodeUrl = '',
+      year = '',
+    ] = cols;
     if (!companyName.trim() || !questionText.trim()) continue;
+    const parsedFreq = parseInt(frequency.trim(), 10);
+    const parsedYear = parseInt(year.trim(), 10);
     rows.push({
       companyName: companyName.trim(),
       questionText: questionText.trim(),
-      topicTags: topicTags.trim() || 'General',
       difficulty: ['Easy', 'Medium', 'Hard'].includes(difficulty.trim()) ? difficulty.trim() : 'Medium',
-      year: parseInt(year.trim(), 10) || new Date().getFullYear(),
+      topicTags: topicTags.trim() || 'General',
+      frequency: !isNaN(parsedFreq) && parsedFreq >= 0 && parsedFreq <= 100 ? parsedFreq : undefined,
+      leetcodeUrl: leetcodeUrl.trim() && /^https?:\/\/.+/.test(leetcodeUrl.trim()) ? leetcodeUrl.trim() : undefined,
+      year: !isNaN(parsedYear) ? parsedYear : new Date().getFullYear(),
     });
   }
   return rows;
@@ -93,9 +106,11 @@ function groupRowsByCompany(rows) {
     }
     map[slug].questions.push({
       questionText: row.questionText,
-      topicTags: row.topicTags,
       difficulty: row.difficulty,
+      topicTags: row.topicTags,
       year: row.year,
+      frequency: row.frequency,
+      leetcodeUrl: row.leetcodeUrl,
     });
   });
   return map;
@@ -143,8 +158,11 @@ function newQuestionRow() {
     topicTags: '',
     difficulty: 'Medium',
     year: new Date().getFullYear(),
+    frequency: '',
+    leetcodeUrl: '',
     roundTitle: '',
     error: '',
+    urlError: '',
   };
 }
 
@@ -220,7 +238,14 @@ export default function AdminCompanyAdd() {
 
   const updateQuestion = (id, field, value) =>
     setQuestions((prev) =>
-      prev.map((q) => q.id === id ? { ...q, [field]: value, error: field === 'questionText' ? '' : q.error } : q)
+      prev.map((q) => {
+        if (q.id !== id) return q;
+        const update = { ...q, [field]: value };
+        if (field === 'questionText') update.error = '';
+        if (field === 'leetcodeUrl') update.urlError = '';
+        if (field === 'urlError') return { ...q, urlError: value }; // direct error set from handleUrlChange
+        return update;
+      })
     );
 
   // ─── Manual validation ────────────────────────────────────────────────────
@@ -261,6 +286,10 @@ export default function AdminCompanyAdd() {
           topicTags: q.topicTags.trim() || 'General',
           difficulty: q.difficulty,
           year: parseInt(q.year, 10) || new Date().getFullYear(),
+          frequency: q.frequency !== '' && q.frequency !== null && q.frequency !== undefined
+            ? parseInt(q.frequency, 10) || undefined
+            : undefined,
+          leetcodeUrl: q.leetcodeUrl.trim() || undefined,
           roundTitle: q.roundTitle.trim() || undefined,
         })),
       };
@@ -293,7 +322,7 @@ export default function AdminCompanyAdd() {
     }
     const rows = parseCsv(csvText);
     if (rows.length === 0) {
-      toast.error('No valid rows found. Check format: companyName, questionText, topicTags, difficulty, year');
+      toast.error('No valid rows found. Check format: companyName, questionText, difficulty, topicTags, frequency, leetcodeUrl, year');
       return;
     }
     const grouped = groupRowsByCompany(rows);
@@ -576,9 +605,9 @@ export default function AdminCompanyAdd() {
               <div className="text-xs text-indigo-800 dark:text-indigo-300 space-y-1">
                 <p className="font-semibold">CSV Format (first row = header, then data rows):</p>
                 <code className="block bg-indigo-100 dark:bg-indigo-900/50 px-2 py-1 rounded-lg font-mono text-[11px]">
-                  companyName, questionText, topicTags, difficulty, year
+                  companyName, questionText, difficulty, topicTags, frequency, leetcodeUrl, year
                 </code>
-                <p>Rows with the same company name (case-insensitive) are grouped automatically before sending.</p>
+                <p>frequency, leetcodeUrl and year are optional — blank cells are fine. Rows with the same company name (case-insensitive) are grouped automatically before sending.</p>
               </div>
             </div>
 
@@ -613,7 +642,7 @@ export default function AdminCompanyAdd() {
                   rows={8}
                   value={csvText}
                   onChange={(e) => { setCsvText(e.target.value); setCsvParsed(false); setCsvGroups({}); }}
-                  placeholder={`companyName,questionText,topicTags,difficulty,year\nGoogle,Two Sum,Arrays,Easy,2024\nGoogle,LRU Cache,Design,Hard,2023\nMicrosoft,Merge Intervals,Arrays,Medium,2024`}
+                  placeholder={`companyName,questionText,difficulty,topicTags,frequency,leetcodeUrl,year\nGoogle,Two Sum,Easy,Arrays,95,https://leetcode.com/problems/two-sum/,2024\nGoogle,LRU Cache,Hard,Design,,,2023\nMicrosoft,Merge Intervals,Medium,Arrays,,,`}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all resize-y"
                 />
               </div>
@@ -677,6 +706,17 @@ export default function AdminCompanyAdd() {
 
 // ─── Question Row sub-component ───────────────────────────────────────────────
 function QuestionRow({ index, question, canDelete, onUpdate, onDelete }) {
+  // Inline URL validation for the leetcodeUrl field
+  function handleUrlChange(val) {
+    onUpdate(question.id, 'leetcodeUrl', val);
+    const trimmed = val.trim();
+    if (trimmed && !/^https?:\/\/.+/.test(trimmed)) {
+      onUpdate(question.id, 'urlError', 'Must start with http:// or https://');
+    } else {
+      onUpdate(question.id, 'urlError', '');
+    }
+  }
+
   return (
     <div className="p-5 group transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/30">
       {/* Row header */}
@@ -698,14 +738,14 @@ function QuestionRow({ index, question, canDelete, onUpdate, onDelete }) {
       </div>
 
       <div className="space-y-3">
-        {/* Question text */}
+        {/* Title / Question text */}
         <div>
           <textarea
             id={`q-text-${question.id}`}
             rows={2}
             value={question.questionText}
             onChange={(e) => onUpdate(question.id, 'questionText', e.target.value)}
-            placeholder="Enter the interview question…"
+            placeholder="Title / Question (e.g. Two Sum, LRU Cache…)"
             className={`w-full px-3.5 py-2.5 rounded-xl border text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all resize-none ${
               question.error ? 'border-red-400 dark:border-red-500' : 'border-slate-200 dark:border-slate-700'
             }`}
@@ -718,27 +758,12 @@ function QuestionRow({ index, question, canDelete, onUpdate, onDelete }) {
           )}
         </div>
 
-        {/* Metadata row */}
+        {/* Row 1: Difficulty | Topics | Frequency | Year */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {/* Topic tags */}
-          <div className="col-span-2 sm:col-span-1">
-            <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
-              Topic Tags
-            </label>
-            <input
-              id={`q-tags-${question.id}`}
-              type="text"
-              value={question.topicTags}
-              onChange={(e) => onUpdate(question.id, 'topicTags', e.target.value)}
-              placeholder="Arrays, DP…"
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all"
-            />
-          </div>
-
           {/* Difficulty */}
           <div>
             <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
-              Difficulty
+              Difficulty <span className="text-red-400">*</span>
             </label>
             <div className="relative">
               <select
@@ -755,10 +780,42 @@ function QuestionRow({ index, question, canDelete, onUpdate, onDelete }) {
             </div>
           </div>
 
-          {/* Year */}
+          {/* Topics */}
           <div>
             <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
-              Year
+              Topics
+            </label>
+            <input
+              id={`q-tags-${question.id}`}
+              type="text"
+              value={question.topicTags}
+              onChange={(e) => onUpdate(question.id, 'topicTags', e.target.value)}
+              placeholder="Arrays, DP…"
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all"
+            />
+          </div>
+
+          {/* Frequency % (optional) */}
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+              Frequency % <span className="font-normal text-slate-400">(optional)</span>
+            </label>
+            <input
+              id={`q-freq-${question.id}`}
+              type="number"
+              min="0"
+              max="100"
+              value={question.frequency}
+              onChange={(e) => onUpdate(question.id, 'frequency', e.target.value)}
+              placeholder="0–100"
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all"
+            />
+          </div>
+
+          {/* Year (optional) */}
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+              Year <span className="font-normal text-slate-400">(optional)</span>
             </label>
             <input
               id={`q-year-${question.id}`}
@@ -770,9 +827,35 @@ function QuestionRow({ index, question, canDelete, onUpdate, onDelete }) {
               className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all"
             />
           </div>
+        </div>
 
-          {/* Round title (optional) */}
-          <div className="col-span-2 sm:col-span-1">
+        {/* Row 2: LeetCode Link | Round Title */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* LeetCode Link (optional) */}
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+              LeetCode Link <span className="font-normal text-slate-400">(optional)</span>
+            </label>
+            <input
+              id={`q-url-${question.id}`}
+              type="url"
+              value={question.leetcodeUrl}
+              onChange={(e) => handleUrlChange(e.target.value)}
+              placeholder="https://leetcode.com/problems/two-sum/"
+              className={`w-full px-3 py-2 rounded-xl border text-xs text-slate-900 dark:text-white placeholder:text-slate-400 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all ${
+                question.urlError ? 'border-red-400 dark:border-red-500' : 'border-slate-200 dark:border-slate-700'
+              }`}
+            />
+            {question.urlError && (
+              <p className="mt-1 text-[11px] text-red-500 dark:text-red-400 flex items-center gap-1">
+                <XCircle className="w-3 h-3 shrink-0" />
+                {question.urlError}
+              </p>
+            )}
+          </div>
+
+          {/* Round Title (optional) */}
+          <div>
             <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
               Round Title <span className="font-normal text-slate-400">(optional)</span>
             </label>

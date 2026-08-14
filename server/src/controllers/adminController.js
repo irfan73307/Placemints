@@ -845,11 +845,34 @@ async function bulkAddQuestions(req, res) {
     if (!q.questionText || !String(q.questionText).trim()) {
       return res.status(400).json({ message: `Question ${i + 1} has empty question text.` });
     }
+
+    // Validate optional frequency (0-100 integer)
+    let frequency = null;
+    if (q.frequency !== undefined && q.frequency !== null && q.frequency !== '') {
+      const freq = parseInt(q.frequency, 10);
+      if (!isNaN(freq) && freq >= 0 && freq <= 100) {
+        frequency = freq;
+      }
+    }
+
+    // Validate optional leetcodeUrl (must look like a real URL)
+    let leetcodeUrl = null;
+    if (q.leetcodeUrl && String(q.leetcodeUrl).trim()) {
+      const urlStr = String(q.leetcodeUrl).trim();
+      if (/^https?:\/\/.+/.test(urlStr)) {
+        leetcodeUrl = urlStr;
+      } else {
+        return res.status(400).json({ message: `Question ${i + 1} has an invalid LeetCode URL. Must start with http:// or https://.` });
+      }
+    }
+
     validatedQuestions.push({
       questionText: String(q.questionText).trim(),
       topicTags: String(q.topicTags || 'General').trim() || 'General',
       difficulty: VALID_DIFFICULTIES.includes(q.difficulty) ? q.difficulty : 'Medium',
       year: parseInt(q.year, 10) || new Date().getFullYear(),
+      frequency,
+      leetcodeUrl,
     });
   }
 
@@ -935,6 +958,8 @@ async function processCompanyQuestions({ slug, companyName, description, tags, t
     topicTags: q.topicTags,
     difficulty: q.difficulty,
     year: q.year,
+    frequency: q.frequency ?? null,
+    leetcodeUrl: q.leetcodeUrl ?? null,
     contributedBy: adminId,
   }));
 

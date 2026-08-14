@@ -102,7 +102,10 @@ async function getCompanyById(req, res) {
       },
       include: {
         rounds: { orderBy: { roundNumber: 'asc' } },
-        questions: { orderBy: { likeCount: 'desc' } },
+        questions: {
+          include: { round: true },
+          orderBy: { likeCount: 'desc' },
+        },
         savedBy: userId ? { where: { userId } } : false,
       },
     });
@@ -128,8 +131,8 @@ async function getCompanyById(req, res) {
     const uniqueQuestions = Array.from(uniqueQuestionsMap.values());
 
     const allPyqs = uniqueQuestions.map((q, idx) => {
-      const titleSlug = q.questionText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      const frequencyVal = q.likeCount || (95 - (idx * 3));
+      // Frequency: real admin-supplied value → engagement likeCount → last-resort estimate
+      const frequencyVal = q.frequency ?? q.likeCount ?? (95 - (idx * 3));
       const starRating = getStarRating(frequencyVal);
 
       return {
@@ -140,17 +143,16 @@ async function getCompanyById(req, res) {
         topic: q.topicTags.split(',')[0] || 'DSA',
         topicTags: q.topicTags.split(',').map((t) => t.trim()),
         year: String(q.year),
-        likeCount: frequencyVal,
+        likeCount: q.likeCount,
         frequency: `${frequencyVal}%`,
         starRating: starRating.stars,
         importanceLabel: starRating.label,
-        expectedRound: idx % 3 === 0 ? 'Technical Interview' : idx % 3 === 1 ? 'Online Coding (OA)' : 'System Design / LLD',
-        isSastraPyq: true, // SASTRA campus drive question
-        leetcodeUrl: `https://leetcode.com/problems/${titleSlug}`,
-        description: `Solve '${q.questionText}' for ${company.name} SASTRA campus interview preparation. Focus on optimal time and space complexities.`,
-        expectedApproach: `Use ${q.topicTags.split(',')[0] || 'Optimal Data Structures'} algorithm with hash mapping / two pointer / dynamic programming.`,
-        timeComplexity: q.difficulty === 'Hard' ? 'O(N log N) or O(N²)' : 'O(N)',
-        spaceComplexity: 'O(N) or O(1) auxiliary space',
+        // Real round title when linked; never rotate by position index
+        expectedRound: q.round?.title || 'Interview Round',
+        isSastraPyq: true,
+        // Only expose a link the admin explicitly supplied — never a guessed slug
+        leetcodeUrl: q.leetcodeUrl || null,
+        hasVerifiedLink: Boolean(q.leetcodeUrl),
       };
     });
 
