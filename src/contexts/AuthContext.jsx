@@ -6,7 +6,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getCurrentUser } from '../services/authService';
+import { getCurrentUser, logout as authLogout } from '../services/authService';
 
 const AuthContext = createContext(null);
 
@@ -29,31 +29,43 @@ export function AuthProvider({ children }) {
         window.history.replaceState({}, document.title, cleanUrl);
       }
 
-      const token = localStorage.getItem('placemints_auth_token');
-      if (token) {
-        try {
-          const res = await getCurrentUser();
-          if (isMounted && res && res.user) {
-            setUser(res.user);
-            setIsAuthenticated(true);
-          }
-        } catch (err) {
-          console.warn('Session restoration failed:', err.message);
-          localStorage.removeItem('placemints_auth_token');
-          if (isMounted) {
-            setUser(null);
-            setIsAuthenticated(false);
-          }
+      try {
+        // Fetch verified user from database via HTTP-only cookie or Bearer token
+        const res = await getCurrentUser();
+        if (isMounted && res && res.user) {
+          setUser(res.user);
+          setIsAuthenticated(true);
+        } else if (isMounted) {
+          setUser(null);
+          setIsAuthenticated(false);
         }
-      }
-
-      if (isMounted) {
-        setIsInitializing(false);
+      } catch (err) {
+        if (isMounted) {
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      } finally {
+        if (isMounted) {
+          setIsInitializing(false);
+        }
       }
     }
 
     initializeSession();
-    return () => { isMounted = false; };
+
+    // Multi-tab logout synchronization listener
+    const handleStorageChange = (e) => {
+      if (e.key === 'placemints_auth_sync' && e.newValue === 'logout') {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const login = () => {
@@ -64,8 +76,15 @@ export function AuthProvider({ children }) {
     window.location.href = `${serverUrl}/auth/google`;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await authLogout();
+    } catch (e) {
+      // Ignore
+    }
     localStorage.removeItem('placemints_auth_token');
+    localStorage.setItem('placemints_auth_sync', 'logout');
+    setTimeout(() => localStorage.removeItem('placemints_auth_sync'), 100);
     setUser(null);
     setIsAuthenticated(false);
   };

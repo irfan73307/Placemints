@@ -66,7 +66,6 @@ export function Register() {
     } catch (err) {
       const msg = err.response?.data?.message || 'Registration failed. Please check your credentials.';
       setErrorMessage(msg);
-      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }

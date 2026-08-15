@@ -82,7 +82,6 @@ export function Login() {
     } catch (err) {
       const msg = err.response?.data?.message || 'Invalid email or password.';
       setErrorMessage(msg);
-      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }

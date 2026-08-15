@@ -13,8 +13,12 @@ import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { GraduationCap } from 'lucide-react';
 import { ROUTES } from '../constants/routes';
+import { useAuth } from '../contexts/AuthContext';
 
 export function AuthLayout() {
+  const { isAuthenticated } = useAuth();
+  const logoDestination = isAuthenticated ? ROUTES.DASHBOARD : ROUTES.HOME;
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center p-4 sm:p-6 select-none font-sans transition-colors">
       {/* Background Decorative Pattern */}
@@ -23,7 +27,7 @@ export function AuthLayout() {
       {/* Main Container */}
       <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-modal p-6 sm:p-8 relative z-10">
         {/* Brand Header */}
-        <Link to={ROUTES.HOME} className="flex flex-col items-center text-center mb-8 hover:opacity-90 transition-opacity">
+        <Link to={logoDestination} className="flex flex-col items-center text-center mb-8 hover:opacity-90 transition-opacity">
           <div className="w-12 h-12 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-md mb-3">
             <GraduationCap className="w-7 h-7" />
           </div>

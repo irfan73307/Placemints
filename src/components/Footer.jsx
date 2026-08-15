@@ -12,12 +12,16 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { GraduationCap } from 'lucide-react';
 import { ROUTES } from '../constants/routes';
+import { useAuth } from '../contexts/AuthContext';
 
 export function Footer() {
+  const { isAuthenticated } = useAuth();
+  const logoDestination = isAuthenticated ? ROUTES.DASHBOARD : ROUTES.HOME;
+
   return (
     <footer className="bg-white border-t border-slate-200 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-sm text-slate-500">
-        <Link to={ROUTES.HOME} className="flex items-center gap-3 hover:opacity-90 transition-opacity">
+        <Link to={logoDestination} className="flex items-center gap-3 hover:opacity-90 transition-opacity">
           <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center text-white">
             <GraduationCap className="w-4 h-4" />
           </div>

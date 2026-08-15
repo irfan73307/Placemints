@@ -1,15 +1,27 @@
 const { verifyAccessToken } = require('../utils/jwt');
 const prisma = require('../db');
 
-async function requireAuth(req, res, next) {
+function extractToken(req) {
+  if (req.cookies?.accessToken) {
+    return req.cookies.accessToken;
+  }
+  if (req.cookies?.token) {
+    return req.cookies.token;
+  }
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.split(' ')[1];
+  }
+  return null;
+}
+
+async function requireAuth(req, res, next) {
+  const token = extractToken(req);
+  if (!token) {
     return res.status(401).json({ message: 'Authentication required. Missing or malformed token.' });
   }
 
-  const token = authHeader.split(' ')[1];
   const decoded = verifyAccessToken(token);
-
   if (!decoded) {
     return res.status(401).json({ message: 'Invalid or expired token.' });
   }
@@ -19,14 +31,12 @@ async function requireAuth(req, res, next) {
 }
 
 async function requireAdmin(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const token = extractToken(req);
+  if (!token) {
     return res.status(401).json({ message: 'Authentication required.' });
   }
 
-  const token = authHeader.split(' ')[1];
   const decoded = verifyAccessToken(token);
-
   if (!decoded) {
     return res.status(401).json({ message: 'Invalid or expired token.' });
   }
@@ -46,14 +56,12 @@ async function requireAdmin(req, res, next) {
 }
 
 async function requirePrimaryAdmin(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const token = extractToken(req);
+  if (!token) {
     return res.status(401).json({ message: 'Authentication required.' });
   }
 
-  const token = authHeader.split(' ')[1];
   const decoded = verifyAccessToken(token);
-
   if (!decoded) {
     return res.status(401).json({ message: 'Invalid or expired token.' });
   }
@@ -72,9 +80,8 @@ async function requirePrimaryAdmin(req, res, next) {
 }
 
 function optionalAuth(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
+  const token = extractToken(req);
+  if (token) {
     const decoded = verifyAccessToken(token);
     if (decoded) {
       req.user = decoded;
@@ -83,4 +90,4 @@ function optionalAuth(req, res, next) {
   next();
 }
 
-module.exports = { requireAuth, requireAdmin, requirePrimaryAdmin, optionalAuth };
+module.exports = { requireAuth, requireAdmin, requirePrimaryAdmin, optionalAuth, extractToken };

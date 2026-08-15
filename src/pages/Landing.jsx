@@ -25,16 +25,21 @@ import {
 import { Button } from '../components/Button';
 import { Footer } from '../components/Footer';
 import { ROUTES } from '../constants/routes';
+import { useAuth } from '../contexts/AuthContext';
 
 export function Landing() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-brand-100 selection:text-brand-700">
       {/* Top Navbar */}
       <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate(ROUTES.HOME)}>
+          <div
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => navigate(isAuthenticated ? ROUTES.DASHBOARD : ROUTES.HOME)}
+          >
             <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-subtle">
               <GraduationCap className="w-5 h-5" />
             </div>
@@ -42,16 +47,24 @@ export function Landing() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => navigate(ROUTES.LOGIN)}
-              className="text-sm font-extrabold text-slate-800 hover:text-brand-600 px-3.5 py-2 rounded-xl hover:bg-slate-100 transition-colors"
-            >
-              Sign In
-            </button>
-            <Button variant="primary" size="sm" onClick={() => navigate(ROUTES.LOGIN)}>
-              Get Started
-            </Button>
+            {isAuthenticated ? (
+              <Button variant="primary" size="sm" onClick={() => navigate(ROUTES.DASHBOARD)}>
+                Go to Dashboard →
+              </Button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => navigate(ROUTES.LOGIN)}
+                  className="text-sm font-extrabold text-slate-800 hover:text-brand-600 px-3.5 py-2 rounded-xl hover:bg-slate-100 transition-colors"
+                >
+                  Sign In
+                </button>
+                <Button variant="primary" size="sm" onClick={() => navigate(ROUTES.LOGIN)}>
+                  Get Started
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>

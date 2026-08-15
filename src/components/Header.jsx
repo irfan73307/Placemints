@@ -50,11 +50,12 @@ export function Header() {
   ];
 
   const deptInfo = getFormattedDepartment(user?.department || user?.branch, user);
+  const logoDestination = isAuthenticated ? ROUTES.DASHBOARD : ROUTES.HOME;
 
   return (
     <header className="sticky top-0 z-30 h-16 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 lg:px-8 flex items-center justify-between transition-colors shadow-subtle font-sans">
       {/* Mobile & Desktop Brand Title */}
-      <Link to={ROUTES.HOME} className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
+      <Link to={logoDestination} className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
         <div className="w-8 h-8 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-sm">
           <GraduationCap className="w-4 h-4" />
         </div>

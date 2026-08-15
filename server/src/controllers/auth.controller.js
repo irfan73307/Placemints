@@ -11,6 +11,17 @@ function getGoogleClientSecret() {
   return process.env.GOOGLE_CLIENT_SECRET ? process.env.GOOGLE_CLIENT_SECRET.trim() : '';
 }
 
+function getCookieOptions(maxAgeMs) {
+  const isProd = process.env.NODE_ENV === 'production';
+  return {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
+    maxAge: maxAgeMs,
+    path: '/',
+  };
+}
+
 function getCallbackUrl(req) {
   if (process.env.GOOGLE_CALLBACK_URL && process.env.GOOGLE_CALLBACK_URL.trim() !== '') {
     return process.env.GOOGLE_CALLBACK_URL.trim();
@@ -203,12 +214,8 @@ function computeGraduationYearFromEmail(email) {
       console.warn('[OAuth REFRESH TOKEN WARN] Failed to save refreshToken to DB:', tokenErr.message);
     }
 
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie('accessToken', accessToken, getCookieOptions(15 * 60 * 1000));
+    res.cookie('refreshToken', refreshToken, getCookieOptions(7 * 24 * 60 * 60 * 1000));
 
     const redirectTarget = `${clientUrl}/dashboard?token=${encodeURIComponent(accessToken)}`;
     console.log(`[OAuth 6/6 SUCCESS] Authentication successful. Redirecting to: ${redirectTarget}`);
@@ -284,12 +291,8 @@ async function register(req, res) {
       },
     });
 
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie('accessToken', accessToken, getCookieOptions(15 * 60 * 1000));
+    res.cookie('refreshToken', refreshToken, getCookieOptions(7 * 24 * 60 * 60 * 1000));
 
     res.status(201).json({
       accessToken,
@@ -378,12 +381,8 @@ async function login(req, res) {
       console.warn('Refresh token save error:', tErr.message);
     }
 
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie('accessToken', accessToken, getCookieOptions(15 * 60 * 1000));
+    res.cookie('refreshToken', refreshToken, getCookieOptions(7 * 24 * 60 * 60 * 1000));
 
     res.json({
       accessToken,
@@ -491,6 +490,8 @@ async function refreshToken(req, res) {
     }
 
     const newAccessToken = generateAccessToken(user);
+    res.cookie('accessToken', newAccessToken, getCookieOptions(15 * 60 * 1000));
+
     res.json({ accessToken: newAccessToken, user: formatUserResponse(user) });
   } catch (err) {
     console.error('Refresh token error:', err);
@@ -508,7 +509,8 @@ async function logout(req, res) {
         data: { revoked: true },
       });
     }
-    res.clearCookie('refreshToken');
+    res.clearCookie('accessToken', { path: '/' });
+    res.clearCookie('refreshToken', { path: '/' });
     res.json({ message: 'Logged out successfully.' });
   } catch (err) {
     console.error('Logout error:', err);
