@@ -116,7 +116,27 @@ export function Settings() {
               Quick Mobile & Desktop navigation to SASTRA placement database controls and admin account management.
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              <Link
+                to="/admin/companies"
+                className="p-4 bg-white/10 hover:bg-white/15 rounded-xl border border-white/15 transition-all flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 shrink-0">
+                    <Building2 className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="font-bold text-sm text-white block group-hover:text-emerald-300 transition-colors">
+                      Company Management
+                    </span>
+                    <span className="text-[11px] text-amber-200/70 block truncate">
+                      View, edit, verify, scrape & manage 290+ recruiters
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-emerald-400 group-hover:translate-x-1 transition-transform shrink-0 ml-2" />
+              </Link>
+
               <Link
                 to="/admin/students"
                 className="p-4 bg-white/10 hover:bg-white/15 rounded-xl border border-white/15 transition-all flex items-center justify-between group"
@@ -127,10 +147,10 @@ export function Settings() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <span className="font-bold text-sm text-white block group-hover:text-amber-300 transition-colors">
-                      Student Data Directory
+                      Student Directory
                     </span>
                     <span className="text-[11px] text-amber-200/70 block truncate">
-                      Manage students, filter CGPA, export CSV & remove records
+                      Manage students, filter CGPA, export CSV
                     </span>
                   </div>
                 </div>
@@ -150,7 +170,7 @@ export function Settings() {
                       Admin Settings & RBAC
                     </span>
                     <span className="text-[11px] text-indigo-200/70 block truncate">
-                      Manage admin accounts, primary credentials & system logs
+                      Manage admin accounts & system logs
                     </span>
                   </div>
                 </div>

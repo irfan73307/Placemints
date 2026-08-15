@@ -26,9 +26,10 @@ export function Sidebar() {
   ];
 
   const adminItems = isAdmin ? [
-    { name: 'Admin Directory', path: '/admin/students', icon: ShieldAlert },
+    { name: 'Company Management', path: '/admin/companies', icon: Building2 },
+    { name: 'Add Company', path: ROUTES.ADMIN_COMPANY_ADD, icon: PlusCircle },
+    { name: 'Student Directory', path: '/admin/students', icon: ShieldAlert },
     { name: 'Admin Settings', path: '/admin/settings', icon: ShieldCheck },
-    { name: 'Company Addn', path: ROUTES.ADMIN_COMPANY_ADD, icon: PlusCircle },
   ] : [];
 
   return (

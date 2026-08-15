@@ -490,6 +490,56 @@ export default function AdminCompanyAdd() {
                   />
                 </div>
 
+                {/* Duplicate Company Detection Card */}
+                {isExisting && companyLookup.company && (
+                  <div className="p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fadeIn">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <span className="font-bold text-xs text-slate-900 dark:text-white">
+                          "{companyLookup.company.name}" already exists in Placemints.
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Domain: {companyLookup.company.officialDomain || companyLookup.company.website || 'N/A'} • Package: {companyLookup.company.ctc || 'Competitive'} • Tier: {companyLookup.company.tier || 'Tier 2'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <a
+                        href={`/admin/companies/${companyLookup.company.slug || companyLookup.company.id}`}
+                        className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-sm"
+                      >
+                        View Existing
+                      </a>
+                      <a
+                        href={`/admin/companies/${companyLookup.company.slug || companyLookup.company.id}?edit=true`}
+                        className="px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-xs font-bold text-white transition-colors shadow-sm shadow-brand-500/20"
+                      >
+                        Edit Existing
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {/* Mandatory Official Website */}
+                <div>
+                  <label htmlFor="company-website" className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                    Official Website <span className="text-red-500">* (Required)</span>
+                  </label>
+                  <input
+                    id="company-website"
+                    type="url"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                    placeholder="https://www.prodapt.com"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all"
+                    required
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Every company in Placemints must have an official website for canonical identity and verified data.
+                  </p>
+                </div>
+
                 {/* Optional fields toggle */}
                 {isNew && (
                   <button
@@ -498,7 +548,7 @@ export default function AdminCompanyAdd() {
                     className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
                   >
                     {showCompanyFields ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    {showCompanyFields ? 'Hide' : 'Add'} company details (optional)
+                    {showCompanyFields ? 'Hide' : 'Add'} additional details (CTC, Tier, Description)
                   </button>
                 )}
 
@@ -508,9 +558,8 @@ export default function AdminCompanyAdd() {
                       { id: 'description', label: 'Description', value: description, setter: setDescription, placeholder: 'Brief company overview…', textarea: true, span: 2 },
                       { id: 'tags', label: 'Tags', value: tags, setter: setTags, placeholder: 'e.g. IT, Product, FAANG' },
                       { id: 'sector', label: 'Sector', value: sector, setter: setSector, placeholder: 'e.g. Technology' },
-                      { id: 'tier', label: 'Tier', value: tier, setter: setTier, placeholder: 'e.g. Tier-1' },
-                      { id: 'ctc', label: 'CTC', value: ctc, setter: setCtc, placeholder: 'e.g. 18–32 LPA' },
-                      { id: 'website', label: 'Website', value: website, setter: setWebsite, placeholder: 'https://…' },
+                      { id: 'tier', label: 'Tier', value: tier, setter: setTier, placeholder: 'e.g. Super Dream, Dream, Tier-1' },
+                      { id: 'ctc', label: 'CTC', value: ctc, setter: setCtc, placeholder: 'e.g. 14 LPA' },
                     ].map(({ id, label, value, setter, placeholder, textarea, span }) => (
                       <div key={id} className={span === 2 ? 'sm:col-span-2' : ''}>
                         <label htmlFor={`company-${id}`} className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">

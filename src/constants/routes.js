@@ -21,12 +21,14 @@ export const ROUTES = {
   ADMIN: '/admin',
   ADMIN_STUDENTS: '/admin/students',
   ADMIN_SETTINGS: '/admin/settings',
+  ADMIN_COMPANIES: '/admin/companies',
+  ADMIN_COMPANY_MANAGE: '/admin/companies/:id',
   ADMIN_COMPANY_ADD: '/admin/companies/add',
   NOT_FOUND: '*',
 };
 
 /**
- * Helper function to generate dynamic paths safely
- * Example: getCompanyDetailsPath('123') -> '/companies/123'
+ * Helper functions to generate dynamic paths safely
  */
 export const getCompanyDetailsPath = (id) => `/companies/${id}`;
+export const getAdminCompanyManagePath = (id) => `/admin/companies/${id}`;

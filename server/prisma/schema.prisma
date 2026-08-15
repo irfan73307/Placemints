@@ -208,9 +208,38 @@ model Company {
   description String
   sector      String?  @default("IT")
   tags        String   // Comma-separated tags
+
+  // ---------------------------------------------------------------------------
+  // SASTRA PLACEMENT INFORMATION (Owned strictly by Placemints Database)
+  // ---------------------------------------------------------------------------
+  eligibilityCriteria     String?   // e.g. "B.Tech / M.Tech (CSE, IT, ECE, EEE) CGPA >= 7.5, no active backlogs"
+  selectionProcess        String?   // e.g. "OA (Coding + Aptitude) -> Technical Round 1 -> Technical Round 2 -> HR"
+  placementNotes          String?   // Admin guidance, syllabus tips, test patterns
+
+  // ---------------------------------------------------------------------------
+  // OFFICIAL GENERAL COMPANY INFORMATION (Separated from Placement Data)
+  // Sourced and verified directly from the company's official website
+  // ---------------------------------------------------------------------------
+  officialWebsite         String?   // e.g. "https://www.prodapt.com"
+  officialDomain          String?   // e.g. "prodapt.com"
+  officialDescription     String?   // Verified description from official website
+  industry                String?   // e.g. "Telecommunications, Connected Intelligence"
+  headquarters            String?   // e.g. "Chennai, Tamil Nadu, India"
+  foundedYear             String?   // e.g. "1999"
+  officialServices        String?   // Comma-separated list of official services/offerings
+  officialTechnologies    String?   // Comma-separated list of tech/domains mentioned
+  officialSourceUrl       String?   // Exact canonical URL verified
+  officialSourceType      String?   @default("official_website") // "official_website" | "verified_manual"
+  officialDataLastUpdated DateTime? // Timestamp of last verified scrape
+  generalInfo             Json?     // Structured verified facts
+  manuallyVerified        Boolean   @default(false) // Flag indicating admin manual review
+  updatedBy               String?   // Admin email/ID who last updated
+
+  // Legacy / Cached secondary data
   wikiData    Json?    // Structured placement facts extracted from Wikipedia infobox
   wikiFetchedAt DateTime? // Cache timestamp for 30-day validity window
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 
   rounds              InterviewRound[]
   questions           Question[]

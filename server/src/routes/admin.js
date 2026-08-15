@@ -18,6 +18,20 @@ const {
   removeCustomCompanyLogo,
   bulkAddQuestions,
 } = require('../controllers/adminController');
+const {
+  getAdminCompanies,
+  getAdminCompanyById,
+  createAdminCompany,
+  updateAdminCompany,
+  deleteAdminCompany,
+  verifyCompanyWebsite,
+  scrapeCompanyOfficial,
+  verifyUrlStandalone,
+  deleteCompanyQuestion,
+  checkCompanyExists,
+  previewOfficialRefresh,
+  applyOfficialRefresh,
+} = require('../controllers/adminCompanyController');
 const { requireAdmin, requirePrimaryAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -30,13 +44,32 @@ router.get('/students/:id', requireAdmin, getStudentDetails);
 router.delete('/students/:id', requireAdmin, deleteStudent);
 router.get('/manage', requireAdmin, getAdminsList);
 
+// =============================================================================
+// ADMIN COMPANY MANAGEMENT ROUTES (Strictly Protected by requireAdmin)
+// =============================================================================
+router.get('/companies', requireAdmin, getAdminCompanies);
+router.get('/companies/check-exists', requireAdmin, checkCompanyExists);
+router.post('/companies', requireAdmin, createAdminCompany);
+router.post('/companies/verify-url', requireAdmin, verifyUrlStandalone);
+router.delete('/companies/questions/:questionId', requireAdmin, deleteCompanyQuestion);
+
+// Company + Question Bulk Upload
+router.post('/companies/bulk-questions', requireAdmin, bulkAddQuestions);
+
+// Single Company Management (CRUD + Scraping + Verification + Re-verification)
+router.get('/companies/:id', requireAdmin, getAdminCompanyById);
+router.put('/companies/:id', requireAdmin, updateAdminCompany);
+router.patch('/companies/:id', requireAdmin, updateAdminCompany);
+router.delete('/companies/:id', requireAdmin, deleteAdminCompany);
+router.post('/companies/:id/verify-website', requireAdmin, verifyCompanyWebsite);
+router.post('/companies/:id/scrape-official', requireAdmin, scrapeCompanyOfficial);
+router.post('/companies/:id/preview-official-refresh', requireAdmin, previewOfficialRefresh);
+router.post('/companies/:id/apply-official-refresh', requireAdmin, applyOfficialRefresh);
+
 // Admin Company Logo Management Endpoints
 router.post('/companies/:id/refresh-logo', requireAdmin, refreshCompanyLogo);
 router.patch('/companies/:id/custom-logo', requireAdmin, setCustomCompanyLogo);
 router.delete('/companies/:id/custom-logo', requireAdmin, removeCustomCompanyLogo);
-
-// Company + Question Bulk Upload (must come before /:id routes)
-router.post('/companies/bulk-questions', requireAdmin, bulkAddQuestions);
 
 // Primary Admin Only Management Routes (Strictly enforced backend RBAC)
 router.post('/manage/add', requirePrimaryAdmin, addAdmin);

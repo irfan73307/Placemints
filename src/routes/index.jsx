@@ -31,18 +31,23 @@ import Settings from '../pages/Settings';
 import AdminStudents from '../pages/AdminStudents';
 import AdminSettings from '../pages/AdminSettings';
 import AdminCompanyAdd from '../pages/AdminCompanyAdd';
+import AdminCompanyList from '../pages/AdminCompanyList';
+import AdminCompanyManage from '../pages/AdminCompanyManage';
 import NotFound from '../pages/NotFound';
+import RouteErrorBoundary from '../components/RouteErrorBoundary';
 
 export const router = createBrowserRouter([
   // Public Marketing Landing Page
   {
     path: ROUTES.HOME,
     element: <Landing />,
+    errorElement: <RouteErrorBoundary />,
   },
 
   // Auth Routes
   {
     element: <AuthLayout />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       {
         path: ROUTES.LOGIN,
@@ -62,6 +67,7 @@ export const router = createBrowserRouter([
   // Onboarding & Protected App Routes
   {
     element: <ProtectedRoute />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       {
         path: ROUTES.PROFILE_SETUP,
@@ -69,6 +75,7 @@ export const router = createBrowserRouter([
       },
       {
         element: <AppLayout />,
+        errorElement: <RouteErrorBoundary />,
         children: [
           {
             path: ROUTES.DASHBOARD,
@@ -81,6 +88,7 @@ export const router = createBrowserRouter([
           {
             path: ROUTES.COMPANY_DETAILS,
             element: <CompanyDetails />,
+            errorElement: <RouteErrorBoundary />,
           },
           {
             path: ROUTES.LIBRARY,
@@ -99,13 +107,27 @@ export const router = createBrowserRouter([
       // Dedicated RBAC Protected Admin Panel Routes
       {
         element: <AdminRoute />,
+        errorElement: <RouteErrorBoundary />,
         children: [
           {
             element: <AppLayout />,
+            errorElement: <RouteErrorBoundary />,
             children: [
               {
                 path: '/admin',
-                element: <AdminStudents />,
+                element: <AdminCompanyList />,
+              },
+              {
+                path: '/admin/companies',
+                element: <AdminCompanyList />,
+              },
+              {
+                path: '/admin/companies/:id',
+                element: <AdminCompanyManage />,
+              },
+              {
+                path: '/admin/companies/add',
+                element: <AdminCompanyAdd />,
               },
               {
                 path: '/admin/students',
@@ -114,10 +136,6 @@ export const router = createBrowserRouter([
               {
                 path: '/admin/settings',
                 element: <AdminSettings />,
-              },
-              {
-                path: '/admin/companies/add',
-                element: <AdminCompanyAdd />,
               },
             ],
           },

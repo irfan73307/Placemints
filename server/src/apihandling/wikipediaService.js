@@ -87,21 +87,35 @@ function fetchJson(url) {
 }
 
 /**
- * Validates that the search result title is relevant to the queried company name
+ * Validates that the search result title is strictly relevant to the queried company name.
+ * Prevents cross-mapping unrelated companies (e.g. Sprint Corporation for Prodapt).
  */
 function isTitleRelevant(queryName, candidateTitle) {
   if (!queryName || !candidateTitle) return false;
   const cleanQ = queryName.toLowerCase().replace(/[^a-z0-9]/g, ' ').trim();
   const cleanT = candidateTitle.toLowerCase().replace(/[^a-z0-9]/g, ' ').trim();
 
-  // Exact or substring match
-  if (cleanT.includes(cleanQ) || cleanQ.includes(cleanT)) return true;
+  // Exact match
+  if (cleanT === cleanQ) return true;
 
-  const qTokens = cleanQ.split(/\s+/).filter((t) => t.length > 1);
-  const tTokens = cleanT.split(/\s+/).filter((t) => t.length > 1);
+  // Substring or prefix match (e.g. "Google" in "Google LLC" or "Tata Consultancy Services" for "TCS")
+  if (cleanT.startsWith(cleanQ) || cleanQ.startsWith(cleanT)) return true;
 
-  // Common acronym / token match (e.g. TCS -> Tata Consultancy Services)
-  if (qTokens.some((qt) => tTokens.includes(qt))) return true;
+  // Specific acronym mappings
+  const ACRONYMS = {
+    tcs: 'tata consultancy services',
+    ami: 'american megatrends',
+    bgst: 'bosch global software technologies',
+  };
+  if (ACRONYMS[cleanQ] && cleanT.includes(ACRONYMS[cleanQ])) return true;
+
+  // Clean tokens check: the candidate title must explicitly contain the main company name
+  const qTokens = cleanQ.split(/\s+/).filter((t) => t.length > 2);
+  const tTokens = cleanT.split(/\s+/).filter((t) => t.length > 2);
+
+  if (qTokens.length > 0 && qTokens.every((qt) => tTokens.includes(qt))) {
+    return true;
+  }
 
   return false;
 }
@@ -126,10 +140,16 @@ async function fetchCompanyWikiData(companyName) {
         return null;
       }
 
-      // Check top result candidates for infobox company
+      // Check top result candidates for infobox company with strict title verification
       const topCandidates = searchList.slice(0, 3);
       for (const candidate of topCandidates) {
         const title = candidate.title;
+
+        // Identity check: candidate title MUST match queried company
+        if (!isTitleRelevant(cleanName, title)) {
+          console.log(`[Wikipedia Validator] Rejected irrelevant candidate "${title}" for query "${cleanName}"`);
+          continue;
+        }
 
         // Step 2: Fetch section 0 wikitext for infobox
         const parseUrl = `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(
@@ -148,6 +168,7 @@ async function fetchCompanyWikiData(companyName) {
 
         const facts = parseWikiInfobox(wikitext, title);
         if (facts) {
+          console.log(`[Wikipedia Matched] Sourced verified infobox for "${cleanName}" from article "${title}"`);
           return facts;
         }
       }
@@ -161,7 +182,8 @@ async function fetchCompanyWikiData(companyName) {
 }
 
 /**
- * Cached getter: returns cached data immediately; triggers background refresh if stale or missing.
+ * Cached getter: returns cached data immediately; if missing/stale, attempts fast fetch (with 2.5s timeout)
+ * and falls back to background update if network is slow, saving results to database.
  */
 async function getOrRefreshCompanyWikiData(company) {
   if (!company) return null;
@@ -172,6 +194,32 @@ async function getOrRefreshCompanyWikiData(company) {
 
   if (isFresh) {
     return company.wikiData;
+  }
+
+  // If no cached data exists, try fast inline fetch so first-time views get facts immediately
+  if (!company.wikiData) {
+    try {
+      const fastFetchPromise = fetchCompanyWikiData(company.name);
+      const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(null), 2500));
+      const freshData = await Promise.race([fastFetchPromise, timeoutPromise]);
+
+      if (freshData) {
+        // Save to DB asynchronously
+        prisma.company
+          .update({
+            where: { id: company.id },
+            data: {
+              wikiData: freshData,
+              wikiFetchedAt: new Date(),
+            },
+          })
+          .catch((e) => console.warn(`[WikipediaService Cache Write] Error for ${company.name}:`, e.message));
+
+        return freshData;
+      }
+    } catch (e) {
+      // Continue to background task
+    }
   }
 
   // Kick off background refresh without blocking response
@@ -199,3 +247,4 @@ module.exports = {
   wikiLimiter,
   CACHE_TTL_MS,
 };
+

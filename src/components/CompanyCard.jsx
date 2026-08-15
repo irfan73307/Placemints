@@ -51,7 +51,13 @@ export function CompanyCard({ company, onToggleSave, className }) {
         {/* Top Header: Logo, Name, CTC & Save Toggle */}
         <div className="flex items-start justify-between gap-3 mb-3.5">
           <div className="flex items-center gap-3 min-w-0">
-            <CompanyLogo logoUrl={logoImage} name={name} size="md" />
+            <CompanyLogo 
+              customLogo={company.customLogo} 
+              logo={company.logo} 
+              logoUrl={logoImage} 
+              name={name} 
+              size="md" 
+            />
             <div className="min-w-0 flex-1">
               <Link
                 to={getCompanyDetailsPath(companySlug)}

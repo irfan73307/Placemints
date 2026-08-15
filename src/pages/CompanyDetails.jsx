@@ -48,7 +48,8 @@ import {
   MapPin,
   Users2,
   Shield,
-  GitBranch
+  GitBranch,
+  Globe,
 } from 'lucide-react';
 
 // Topic to Lucide icon resolver
@@ -81,13 +82,17 @@ export function CompanyDetails() {
   useEffect(() => {
     async function loadCompanyDetails() {
       setIsLoading(true);
+      setCompany(null);
       try {
         const res = await getCompanyById(id);
         if (res && res.company) {
           setCompany(res.company);
+        } else {
+          setCompany(null);
         }
       } catch (err) {
         console.error('Error fetching company:', err);
+        setCompany(null);
       } finally {
         setIsLoading(false);
       }
@@ -326,7 +331,14 @@ export function CompanyDetails() {
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-brand-700 via-brand-600 to-indigo-600 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 border border-brand-500/30">
         <div className="flex items-center gap-5">
-          <CompanyLogo logoUrl={company.logo || company.logoUrl} name={company.name} size="xl" />
+          <CompanyLogo 
+            customLogo={company.customLogo} 
+            logo={company.logo} 
+            logoUrl={company.logo || company.logoUrl} 
+            domain={company.officialInfo?.officialDomain || company.officialDomain}
+            name={company.name} 
+            size="xl" 
+          />
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">{company.name}</h1>
@@ -383,7 +395,7 @@ export function CompanyDetails() {
               : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          PYQs & LeetCode ({company.pyqs ? company.pyqs.length : 0})
+          PYQs & LeetCode ({sastraQuestionsList.length + generalQuestionsList.length})
         </button>
       </div>
 
@@ -391,16 +403,102 @@ export function CompanyDetails() {
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            {/* Placement Facts (Wikipedia Sourced - Rendered only if facts exist) */}
+            {/* 1. VERIFIED OFFICIAL COMPANY INFORMATION (From Official Website) */}
+            {company.officialInfo && (company.officialInfo.officialDescription || company.officialInfo.officialDomain) && (
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-brand-200 dark:border-brand-900/60 p-6 shadow-card space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+                    <span>Official Company Profile</span>
+                  </h2>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 shadow-sm">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                      <span>Verified Official Source</span>
+                    </span>
+                    {company.officialInfo.officialWebsite && (
+                      <a
+                        href={company.officialInfo.officialWebsite}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700"
+                      >
+                        <Globe className="w-3 h-3 text-slate-400" />
+                        <span>{company.officialInfo.officialDomain || 'Official Site'}</span>
+                        <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {company.officialInfo.officialDescription || company.description}
+                </p>
+
+                {/* Official Services & Solutions Keyword Badges */}
+                {company.officialInfo.officialServices && company.officialInfo.officialServices.length > 0 && (
+                  <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800/60">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 uppercase tracking-wider text-[10px]">
+                      <Briefcase className="w-3.5 h-3.5 text-brand-600" />
+                      Core Offerings & Services:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {company.officialInfo.officialServices.map((srv, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800 shadow-sm"
+                        >
+                          {srv}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Official Technologies Keyword Badges */}
+                {company.officialInfo.officialTechnologies && company.officialInfo.officialTechnologies.length > 0 && (
+                  <div className="space-y-2 pt-2">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 uppercase tracking-wider text-[10px]">
+                      <Cpu className="w-3.5 h-3.5 text-indigo-600" />
+                      Technology Focus:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {company.officialInfo.officialTechnologies.map((tech, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-sm"
+                        >
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Headquarters & Industry Details */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs border-t border-slate-100 dark:border-slate-800/60 text-slate-500 dark:text-slate-400">
+                  <div>
+                    <strong className="text-slate-800 dark:text-slate-200">Industry: </strong>
+                    <span>{company.officialInfo.industry || company.sector || 'Technology'}</span>
+                  </div>
+                  <div>
+                    <strong className="text-slate-800 dark:text-slate-200">Headquarters: </strong>
+                    <span>{company.officialInfo.headquarters || 'Global Operations'}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 2. Placement Facts (Secondary Wikipedia Infobox if Verified) */}
             {wikiFacts.length > 0 && (
               <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-card space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                   <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Briefcase className="w-4 h-4 text-brand-600 dark:text-brand-400" />
-                    <span>Company Placement Facts</span>
+                    <span>Company Background Facts</span>
                   </h2>
                   <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                    Official Facts
+                    Sourced Facts
                   </span>
                 </div>
 
@@ -440,20 +538,11 @@ export function CompanyDetails() {
               </div>
             )}
 
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-card space-y-3">
-              <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                <Building2 className="w-4 h-4 text-brand-600" />
-                <span>Company Overview</span>
-              </h2>
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                {company.overview || (company.description ? `${company.name} is a premier campus recruiter at SASTRA University. ${company.description}` : `${company.name} recruitment profile and selection archives at SASTRA University.`)}
-              </p>
-            </div>
-
+            {/* 3. SASTRA PLACEMENT INTELLIGENCE (Hiring Process & Eligibility) */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-card space-y-3">
               <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
                 <Layers className="w-4 h-4 text-indigo-600" />
-                <span>Hiring Process</span>
+                <span>SASTRA Campus Selection Process</span>
               </h2>
               <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                 {company.hiringProcess || `The selection process typically spans ${cleanRounds.length > 0 ? cleanRounds.length : 3}-4 rounds, starting with an Online Coding & Aptitude Assessment (OA), followed by Technical DSA interviews, System Design (LLD/HLD), and HR assessment.`}
@@ -463,7 +552,7 @@ export function CompanyDetails() {
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-card space-y-3">
               <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Eligibility Criteria</span>
+                <span>SASTRA Eligibility Criteria</span>
               </h2>
               <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                 {company.eligibilityCriteria || 'B.Tech / M.Tech students in CSE, IT, ECE, EEE with CGPA 7.5+ and no active backlogs.'}
@@ -528,7 +617,13 @@ export function CompanyDetails() {
               </div>
             ))
           ) : (
-            <p className="text-xs text-slate-500 py-8 text-center">No round breakdown available.</p>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 text-center space-y-2 shadow-card">
+              <Layers className="w-8 h-8 text-slate-400 mx-auto" />
+              <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">No round breakdown available</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Detailed round formats for {company.name} will be added once finalized by the recruitment cell.
+              </p>
+            </div>
           )}
         </div>
       )}
@@ -566,6 +661,17 @@ export function CompanyDetails() {
               <div className="space-y-4">
                 {generalQuestionsList.map((q, idx) => renderQuestionCard(q, sastraQuestionsList.length + idx))}
               </div>
+            </div>
+          )}
+
+          {/* 3. Empty State if 0 questions are available */}
+          {sastraQuestionsList.length === 0 && generalQuestionsList.length === 0 && (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 text-center space-y-2 shadow-card">
+              <HelpCircle className="w-8 h-8 text-slate-400 mx-auto" />
+              <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">No interview questions archived yet</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Interview questions for {company.name} are being compiled by the placement preparation team.
+              </p>
             </div>
           )}
         </div>

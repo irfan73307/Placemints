@@ -87,12 +87,12 @@ export function Companies() {
         <div>
           <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Recruiting Companies Archive</h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
-            Explore 246+ campus recruiters visiting SASTRA, selection processes, CTC offers, and past question archives.
+            Explore 290+ campus recruiters visiting SASTRA, selection processes, CTC offers, and past question archives.
           </p>
         </div>
 
         <div className="text-xs font-extrabold text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-950 px-3.5 py-1.5 rounded-full border border-brand-200/80 dark:border-brand-800 w-fit shrink-0">
-          {companies.length} Companies Archived
+          {isLoading ? '...' : `${companies.length} Companies Archived`}
         </div>
       </div>
 
