@@ -8,13 +8,16 @@
  */
 
 import React from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Building2, Bookmark, User, GraduationCap, Settings as SettingsIcon, ShieldAlert, ShieldCheck, PlusCircle } from 'lucide-react';
 import { ROUTES } from '../constants/routes';
 import { useAuth } from '../contexts/AuthContext';
 
 export function Sidebar() {
   const { user, isAuthenticated } = useAuth();
+  const location = useLocation();
+  const pathname = location.pathname;
+
   const isAdmin = (user?.role || '').toUpperCase() === 'ADMIN';
   const logoDestination = isAuthenticated ? ROUTES.DASHBOARD : ROUTES.HOME;
 
@@ -32,6 +35,49 @@ export function Sidebar() {
     { name: 'Student Directory', path: '/admin/students', icon: ShieldAlert },
     { name: 'Admin Settings', path: '/admin/settings', icon: ShieldCheck },
   ] : [];
+
+  // Deterministic Route Active Matching (Prevents Multiple Active Items)
+  const isItemActive = (itemPath) => {
+    // Admin Routes
+    if (itemPath === '/admin/companies') {
+      return (
+        pathname === '/admin' ||
+        pathname === '/admin/companies' ||
+        (pathname.startsWith('/admin/companies/') && pathname !== '/admin/companies/add' && pathname !== ROUTES.ADMIN_COMPANY_ADD)
+      );
+    }
+    if (itemPath === '/admin/companies/add' || itemPath === ROUTES.ADMIN_COMPANY_ADD) {
+      return pathname === '/admin/companies/add' || pathname === ROUTES.ADMIN_COMPANY_ADD;
+    }
+    if (itemPath === '/admin/students') {
+      return pathname === '/admin/students' || pathname.startsWith('/admin/students/');
+    }
+    if (itemPath === '/admin/settings') {
+      return pathname === '/admin/settings' || pathname.startsWith('/admin/settings/');
+    }
+
+    // Student Platform Routes
+    if (itemPath === ROUTES.COMPANIES) {
+      return (
+        pathname === ROUTES.COMPANIES ||
+        (pathname.startsWith('/companies/') && !pathname.startsWith('/admin'))
+      );
+    }
+    if (itemPath === ROUTES.DASHBOARD) {
+      return pathname === ROUTES.DASHBOARD;
+    }
+    if (itemPath === ROUTES.LIBRARY) {
+      return pathname === ROUTES.LIBRARY;
+    }
+    if (itemPath === ROUTES.PROFILE) {
+      return pathname === ROUTES.PROFILE || pathname.startsWith('/profile');
+    }
+    if (itemPath === ROUTES.SETTINGS) {
+      return pathname === ROUTES.SETTINGS;
+    }
+
+    return pathname === itemPath;
+  };
 
   return (
     <aside className="hidden lg:flex flex-col w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-screen fixed top-0 left-0 bottom-0 select-none z-40 font-sans transition-colors">
@@ -54,25 +100,20 @@ export function Sidebar() {
           </div>
           {navItems.map((item) => {
             const Icon = item.icon;
+            const isActive = isItemActive(item.path);
             return (
-              <NavLink
+              <Link
                 key={item.path}
                 to={item.path}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 relative ${
-                    isActive
-                      ? 'bg-brand-50 dark:bg-brand-950 text-brand-700 dark:text-brand-300 font-bold border-l-4 border-brand-600 dark:border-brand-500 shadow-subtle'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 hover:text-slate-900 dark:hover:text-white'
-                  }`
-                }
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 relative ${
+                  isActive
+                    ? 'bg-brand-50 dark:bg-brand-950 text-brand-700 dark:text-brand-300 font-bold border-l-4 border-brand-600 dark:border-brand-500 shadow-subtle'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 hover:text-slate-900 dark:hover:text-white'
+                }`}
               >
-                {({ isActive }) => (
-                  <>
-                    <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`} />
-                    <span>{item.name}</span>
-                  </>
-                )}
-              </NavLink>
+                <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`} />
+                <span>{item.name}</span>
+              </Link>
             );
           })}
         </div>
@@ -86,25 +127,20 @@ export function Sidebar() {
             </div>
             {adminItems.map((item) => {
               const Icon = item.icon;
+              const isActive = isItemActive(item.path);
               return (
-                <NavLink
+                <Link
                   key={item.path}
                   to={item.path}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 ${
-                      isActive
-                        ? 'bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-bold border-l-4 border-amber-500 shadow-subtle'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 hover:text-slate-900 dark:hover:text-white'
-                    }`
-                  }
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 ${
+                    isActive
+                      ? 'bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-bold border-l-4 border-amber-500 shadow-subtle'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 hover:text-slate-900 dark:hover:text-white'
+                  }`}
                 >
-                  {({ isActive }) => (
-                    <>
-                      <Icon className={`w-4 h-4 ${isActive ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}`} />
-                      <span>{item.name}</span>
-                    </>
-                  )}
-                </NavLink>
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                  <span>{item.name}</span>
+                </Link>
               );
             })}
           </div>

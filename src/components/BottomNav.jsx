@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Building2, Bookmark, User, Settings as SettingsIcon } from 'lucide-react';
 import { ROUTES } from '../constants/routes';
 
@@ -19,6 +19,31 @@ const navItems = [
 ];
 
 export function BottomNav() {
+  const location = useLocation();
+  const pathname = location.pathname;
+
+  const isItemActive = (itemPath) => {
+    if (itemPath === ROUTES.COMPANIES) {
+      return (
+        pathname === ROUTES.COMPANIES ||
+        (pathname.startsWith('/companies/') && !pathname.startsWith('/admin'))
+      );
+    }
+    if (itemPath === ROUTES.DASHBOARD) {
+      return pathname === ROUTES.DASHBOARD;
+    }
+    if (itemPath === ROUTES.LIBRARY) {
+      return pathname === ROUTES.LIBRARY;
+    }
+    if (itemPath === ROUTES.PROFILE) {
+      return pathname === ROUTES.PROFILE || pathname.startsWith('/profile');
+    }
+    if (itemPath === ROUTES.SETTINGS) {
+      return pathname === ROUTES.SETTINGS;
+    }
+    return pathname === itemPath;
+  };
+
   return (
     <nav 
       aria-label="Mobile bottom navigation"
@@ -27,23 +52,18 @@ export function BottomNav() {
       <div className="flex items-center justify-around h-14 px-1">
         {navItems.map((item) => {
           const Icon = item.icon;
+          const isActive = isItemActive(item.path);
           return (
-            <NavLink
+            <Link
               key={item.path}
               to={item.path}
-              className={({ isActive }) =>
-                `flex flex-col items-center justify-center flex-1 h-full py-1 text-[10px] font-bold transition-all ${
-                  isActive ? 'text-brand-600 dark:text-brand-400 font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`
-              }
+              className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-[10px] font-bold transition-all ${
+                isActive ? 'text-brand-600 dark:text-brand-400 font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
             >
-              {({ isActive }) => (
-                <>
-                  <Icon className={`w-4 h-4 mb-0.5 ${isActive ? 'text-brand-600 dark:text-brand-400 scale-110' : 'text-slate-400 dark:text-slate-500'}`} />
-                  <span>{item.name}</span>
-                </>
-              )}
-            </NavLink>
+              <Icon className={`w-4 h-4 mb-0.5 ${isActive ? 'text-brand-600 dark:text-brand-400 scale-110' : 'text-slate-400 dark:text-slate-500'}`} />
+              <span>{item.name}</span>
+            </Link>
           );
         })}
       </div>
