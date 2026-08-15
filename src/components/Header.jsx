@@ -16,7 +16,7 @@ import { getFormattedDepartment } from '../utils/departmentUtils';
 import { ROUTES } from '../constants/routes';
 
 export function Header() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const isAdmin = user?.role === 'ADMIN' || user?.isAdmin;
 
