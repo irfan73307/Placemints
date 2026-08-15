@@ -732,11 +732,15 @@ async function scrapeCompanyOfficial(req, res) {
 // POST /api/admin/companies/:id/preview-official-refresh
 async function previewOfficialRefresh(req, res) {
   try {
-    const { id } = req.params;
-    const { website } = req.body;
+    const companyId = req.params.id || req.body.companyId || req.body.id;
+    const incomingWebsite = req.body.website || req.body.officialWebsite || req.body.url;
+
+    if (!companyId) {
+      return res.status(400).json({ message: 'Company ID is required.' });
+    }
 
     const company = await prisma.company.findFirst({
-      where: { OR: [{ id }, { slug: id }] },
+      where: { OR: [{ id: companyId }, { slug: companyId }] },
       include: {
         _count: { select: { questions: true, rounds: true } },
       },
@@ -746,7 +750,7 @@ async function previewOfficialRefresh(req, res) {
       return res.status(404).json({ message: 'Company not found.' });
     }
 
-    const targetWebsite = website || company.officialWebsite || company.website;
+    const targetWebsite = incomingWebsite || company.officialWebsite || company.website;
     if (!targetWebsite || targetWebsite.trim() === '') {
       return res.status(400).json({ message: 'Official website URL is required.' });
     }
@@ -820,12 +824,17 @@ async function previewOfficialRefresh(req, res) {
 // POST /api/admin/companies/:id/apply-official-refresh
 async function applyOfficialRefresh(req, res) {
   try {
-    const { id } = req.params;
-    const { website, selectedData } = req.body;
     const adminUser = req.user;
+    const companyId = req.params.id || req.body.companyId || req.body.id;
+    const incomingWebsite = req.body.website || req.body.officialWebsite || req.body.url;
+    const { selectedData } = req.body;
+
+    if (!companyId) {
+      return res.status(400).json({ message: 'Company ID is required.' });
+    }
 
     const company = await prisma.company.findFirst({
-      where: { OR: [{ id }, { slug: id }] },
+      where: { OR: [{ id: companyId }, { slug: companyId }] },
       include: {
         _count: { select: { questions: true, rounds: true } },
       },
@@ -835,8 +844,24 @@ async function applyOfficialRefresh(req, res) {
       return res.status(404).json({ message: 'Company not found.' });
     }
 
-    const targetWebsite = website || company.officialWebsite || company.website;
+    const targetWebsite = incomingWebsite || company.officialWebsite || company.website;
+    if (!targetWebsite || targetWebsite.trim() === '') {
+      return res.status(400).json({ message: 'Official website URL is required.' });
+    }
+
     const { domain, fullUrl } = resolveCanonicalDomain(company.name, targetWebsite);
+    if (!domain || !fullUrl) {
+      return res.status(400).json({ message: 'Invalid official website URL.' });
+    }
+
+    const ping = await verifyWebsiteReachability(fullUrl);
+    if (!ping.reachable) {
+      return res.status(422).json({
+        message: 'Official website could not be verified or reached. Existing company information has been preserved.',
+        reachable: false,
+        error: ping.error,
+      });
+    }
 
     // If pre-scraped data provided by Admin confirmation, use it; otherwise re-scrape verified domain
     let officialData = selectedData;

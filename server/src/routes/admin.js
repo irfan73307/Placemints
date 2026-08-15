@@ -44,13 +44,13 @@ router.get('/students/:id', requireAdmin, getStudentDetails);
 router.delete('/students/:id', requireAdmin, deleteStudent);
 router.get('/manage', requireAdmin, getAdminsList);
 
-// =============================================================================
-// ADMIN COMPANY MANAGEMENT ROUTES (Strictly Protected by requireAdmin)
-// =============================================================================
 router.get('/companies', requireAdmin, getAdminCompanies);
+router.get('/companies/stats', requireAdmin, getAdminStats);
 router.get('/companies/check-exists', requireAdmin, checkCompanyExists);
 router.post('/companies', requireAdmin, createAdminCompany);
 router.post('/companies/verify-url', requireAdmin, verifyUrlStandalone);
+router.post('/companies/preview-official-refresh', requireAdmin, previewOfficialRefresh);
+router.post('/companies/apply-official-refresh', requireAdmin, applyOfficialRefresh);
 router.delete('/companies/questions/:questionId', requireAdmin, deleteCompanyQuestion);
 
 // Company + Question Bulk Upload

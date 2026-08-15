@@ -35,6 +35,7 @@ import {
   Edit2,
   AlertTriangle,
   GraduationCap,
+  Building2,
   X
 } from 'lucide-react';
 
