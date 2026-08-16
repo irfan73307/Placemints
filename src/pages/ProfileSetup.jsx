@@ -4,8 +4,8 @@
  * Production-ready student onboarding and profile setup page for SASTRA University students:
  * 1. Choice of setup: "Fill Automatically from Resume" vs "Enter Manually"
  * 2. Accurate database auto-fill without hardcoded dummy fallbacks
- * 3. Client-side intelligent resume text parser for PDF, DOCX, DOC, TXT
- * 4. "Review information extracted from your resume" card with inline editing and conflict detection
+ * 3. Client-side intelligent resume text parser with pre-validation & non-resume rejection
+ * 4. "Review information extracted from your resume" card with conflict detection & inline editing
  * 5. Complete Light Mode / Dark Mode visual consistency across all cards, inputs, dropdowns, and buttons
  * 6. High contrast labels (pure black/dark slate in light mode) and light-styled inputs
  * 7. Real-time dynamic profile completion percentage tracking
@@ -21,7 +21,11 @@ import { useToast } from '../contexts/ToastContext';
 import { updateProfile } from '../services/userService';
 import { calculateProfileCompletion, SASTRA_DEPARTMENTS } from '../utils/profileCompletion';
 import { parseRollNumber, detectBranchFromEmail } from '../utils/programCodeMap';
-import { extractTextFromFile, parseResumeText } from '../utils/resumeParser';
+import { 
+  validateResumeFileMetadata, 
+  parseResumeFile, 
+  RESUME_REJECTION_MESSAGE 
+} from '../utils/resumeParser';
 import { ROUTES } from '../constants/routes';
 import { 
   User, 
@@ -40,7 +44,8 @@ import {
   ChevronRight,
   HelpCircle,
   Eye,
-  FileCheck
+  FileCheck,
+  AlertTriangle
 } from 'lucide-react';
 
 const SUGGESTED_ROLES = [
@@ -218,16 +223,16 @@ export function ProfileSetup() {
     }
   };
 
-  // Resume File Upload & Parsing Handler
+  // Resume File Upload & Parsing Handler with Strict Validation
   const handleResumeFileSelect = async (file) => {
     if (!file) return;
+    setFormError('');
 
-    const validExtensions = ['.pdf', '.docx', '.doc', '.txt', '.md'];
-    const fileName = file.name.toLowerCase();
-    const isValid = validExtensions.some((ext) => fileName.endsWith(ext));
-
-    if (!isValid) {
-      toast.error('Please upload a valid resume file (PDF, DOCX, DOC, or TXT).');
+    const metaValidation = validateResumeFileMetadata(file);
+    if (!metaValidation.isValid) {
+      setFormError(metaValidation.reason);
+      toast.error(metaValidation.reason);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
 
@@ -235,12 +240,20 @@ export function ProfileSetup() {
     setIsParsingResume(true);
 
     try {
-      const text = await extractTextFromFile(file);
-      const parseResult = parseResumeText(text, user);
+      const parseResult = await parseResumeFile(file, user);
+
+      if (!parseResult.isValid) {
+        const rejectMsg = parseResult.reason || RESUME_REJECTION_MESSAGE;
+        setFormError(rejectMsg);
+        toast.error(rejectMsg);
+        setResumeFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
 
       setResumeParseResult(parseResult);
 
-      // Pre-apply extracted values to form states
+      // Pre-apply extracted values to form states (without overwriting conflicting verified database values without user confirmation)
       const ex = parseResult.extracted;
       if (ex.fullName) setFullName(ex.fullName);
       if (ex.rollNumber && !rollNumber) setRollNumber(ex.rollNumber);
@@ -261,11 +274,13 @@ export function ProfileSetup() {
       if (ex.bio) setBio(ex.bio);
 
       setSetupMode('resume_review');
-      toast.success(`Resume parsed! Found ${parseResult.detectedCount} profile attributes.`);
+      toast.success(`Resume parsed! Detected ${parseResult.detectedCount} profile attributes.`);
     } catch (err) {
       console.error('Resume extraction error:', err);
-      toast.error('Could not parse resume text automatically. You can complete the profile manually.');
-      setSetupMode('manual');
+      setFormError(RESUME_REJECTION_MESSAGE);
+      toast.error(RESUME_REJECTION_MESSAGE);
+      setResumeFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     } finally {
       setIsParsingResume(false);
     }
@@ -456,7 +471,10 @@ export function ProfileSetup() {
             {/* Option A: Auto-Fill from Resume */}
             <button
               type="button"
-              onClick={() => setSetupMode('resume')}
+              onClick={() => {
+                setFormError('');
+                setSetupMode('resume');
+              }}
               className={`p-4 rounded-2xl border text-left transition-all flex items-start gap-3.5 ${
                 setupMode === 'resume' || setupMode === 'resume_review'
                   ? 'border-brand-600 bg-brand-50/50 dark:bg-brand-950/30 ring-2 ring-brand-500/20'
@@ -482,7 +500,10 @@ export function ProfileSetup() {
             {/* Option B: Enter Manually */}
             <button
               type="button"
-              onClick={() => setSetupMode('manual')}
+              onClick={() => {
+                setFormError('');
+                setSetupMode('manual');
+              }}
               className={`p-4 rounded-2xl border text-left transition-all flex items-start gap-3.5 ${
                 setupMode === 'manual'
                   ? 'border-brand-600 bg-brand-50/50 dark:bg-brand-950/30 ring-2 ring-brand-500/20'
@@ -508,7 +529,7 @@ export function ProfileSetup() {
             <div className="space-y-1 text-center max-w-md mx-auto">
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Upload Your Student Resume</h2>
               <p className="text-xs text-slate-600 dark:text-slate-400">
-                We'll scan your resume locally and extract relevant details for your verification.
+                We'll validate and scan your resume to extract relevant student metrics for your review.
               </p>
             </div>
 
@@ -542,9 +563,9 @@ export function ProfileSetup() {
 
               {isParsingResume ? (
                 <div className="space-y-2">
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Extracting Profile Details...</h3>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Analyzing Resume & Extracting Details...</h3>
                   <p className="text-xs text-slate-600 dark:text-slate-400">
-                    Identifying department, CGPA, technical skills, and coding profile links...
+                    Validating resume structure, department, CGPA, technical skills, and coding handles...
                   </p>
                 </div>
               ) : (
@@ -596,13 +617,66 @@ export function ProfileSetup() {
               </div>
             </div>
 
+            {/* Conflict Resolution Banner (if DB profile differs from Resume) */}
+            {resumeParseResult?.conflicts && resumeParseResult.conflicts.length > 0 && (
+              <div className="space-y-3">
+                {resumeParseResult.conflicts.map((conflict, idx) => (
+                  <div
+                    key={idx}
+                    className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-xs text-amber-900 dark:text-amber-200 space-y-2.5 animate-fadeIn"
+                  >
+                    <div className="flex items-center gap-2 font-bold text-amber-950 dark:text-amber-100 text-sm">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                      <span>Different {conflict.label} found in your resume</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800">
+                        <span className="text-[11px] font-bold text-slate-500 block">Current Database Profile:</span>
+                        <span className="font-bold text-slate-900 dark:text-white text-sm">{conflict.current}</span>
+                      </div>
+                      <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800">
+                        <span className="text-[11px] font-bold text-slate-500 block">Extracted from Resume:</span>
+                        <span className="font-bold text-brand-600 dark:text-brand-400 text-sm">{conflict.extracted}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (conflict.field === 'department') setDepartment(conflict.current);
+                          if (conflict.field === 'cgpa') setCgpa(conflict.current);
+                          toast.success(`Retained database ${conflict.label}.`);
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 font-bold hover:bg-slate-300 text-slate-800 dark:text-slate-200 transition-colors"
+                      >
+                        Keep Current Database Value
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (conflict.field === 'department') setDepartment(conflict.extracted);
+                          if (conflict.field === 'cgpa') setCgpa(conflict.extracted);
+                          toast.success(`Applied resume ${conflict.label}.`);
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold transition-colors"
+                      >
+                        Use Resume Value ({conflict.extracted})
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Quick Extraction Grid with In-Line Edit */}
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-slate-100">
                     <span>Full Name *</span>
-                    {resumeParseResult?.detectionStatus?.fullName ? (
+                    {resumeParseResult?.confidence?.fullName ? (
                       <span className="text-emerald-700 dark:text-emerald-400 font-bold text-[11px]">✓ Detected</span>
                     ) : (
                       <span className="text-slate-500 text-[11px]">— Missing</span>
@@ -619,7 +693,7 @@ export function ProfileSetup() {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-slate-100">
                     <span>SASTRA Roll Number (9 Digits) *</span>
-                    {resumeParseResult?.detectionStatus?.rollNumber ? (
+                    {resumeParseResult?.confidence?.rollNumber ? (
                       <span className="text-emerald-700 dark:text-emerald-400 font-bold text-[11px]">✓ Detected</span>
                     ) : (
                       <span className="text-slate-500 text-[11px]">— Missing</span>
@@ -640,7 +714,7 @@ export function ProfileSetup() {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-slate-100">
                     <span>Department / Branch *</span>
-                    {resumeParseResult?.detectionStatus?.department ? (
+                    {resumeParseResult?.confidence?.department ? (
                       <span className="text-emerald-700 dark:text-emerald-400 font-bold text-[11px]">✓ Detected</span>
                     ) : (
                       <span className="text-slate-500 text-[11px]">— Missing</span>
@@ -649,7 +723,7 @@ export function ProfileSetup() {
                   <select
                     value={department}
                     onChange={(e) => setDepartment(e.target.value)}
-                    className="w-full h-11 px-3.5 text-sm bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 dark:focus:border-brand-500 transition-all shadow-subtle hover:border-slate-400 dark:hover:border-slate-600"
+                    className="w-full h-11 px-3.5 text-sm bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 dark:focus:border-brand-500 transition-all shadow-subtle hover:border-slate-400 dark:hover:border-slate-600 font-medium"
                     required
                   >
                     <option value="">Select your department</option>
@@ -664,7 +738,7 @@ export function ProfileSetup() {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-slate-100">
                     <span>Current CGPA</span>
-                    {resumeParseResult?.detectionStatus?.cgpa ? (
+                    {resumeParseResult?.confidence?.cgpa ? (
                       <span className="text-emerald-700 dark:text-emerald-400 font-bold text-[11px]">✓ Detected</span>
                     ) : (
                       <span className="text-slate-500 text-[11px]">— Missing</span>
@@ -680,7 +754,7 @@ export function ProfileSetup() {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-slate-100">
                     <span>Graduation Year</span>
-                    {resumeParseResult?.detectionStatus?.graduationYear ? (
+                    {resumeParseResult?.confidence?.graduationYear ? (
                       <span className="text-emerald-700 dark:text-emerald-400 font-bold text-[11px]">✓ Detected</span>
                     ) : (
                       <span className="text-slate-500 text-[11px]">— Missing</span>
@@ -699,7 +773,7 @@ export function ProfileSetup() {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-slate-100">
                     <span>GitHub Profile</span>
-                    {resumeParseResult?.detectionStatus?.github ? (
+                    {resumeParseResult?.confidence?.github ? (
                       <span className="text-emerald-700 dark:text-emerald-400 font-bold text-[11px]">✓ Detected</span>
                     ) : (
                       <span className="text-slate-500 text-[11px]">— Missing</span>
@@ -715,7 +789,7 @@ export function ProfileSetup() {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-slate-100">
                     <span>LinkedIn Profile</span>
-                    {resumeParseResult?.detectionStatus?.linkedin ? (
+                    {resumeParseResult?.confidence?.linkedin ? (
                       <span className="text-emerald-700 dark:text-emerald-400 font-bold text-[11px]">✓ Detected</span>
                     ) : (
                       <span className="text-slate-500 text-[11px]">— Missing</span>
@@ -732,7 +806,7 @@ export function ProfileSetup() {
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-slate-100">
                   <span>Programming Languages & Skills</span>
-                  {resumeParseResult?.detectionStatus?.programmingLanguages ? (
+                  {resumeParseResult?.confidence?.programmingLanguages ? (
                     <span className="text-emerald-700 dark:text-emerald-400 font-bold text-[11px]">✓ Detected</span>
                   ) : (
                     <span className="text-slate-500 text-[11px]">— Missing</span>
@@ -748,7 +822,7 @@ export function ProfileSetup() {
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-slate-100">
                   <span>Primary Placement Goal</span>
-                  {resumeParseResult?.detectionStatus?.placementGoal ? (
+                  {resumeParseResult?.confidence?.placementGoal ? (
                     <span className="text-emerald-700 dark:text-emerald-400 font-bold text-[11px]">✓ Detected</span>
                   ) : (
                     <span className="text-slate-500 text-[11px]">— Missing</span>
@@ -779,6 +853,7 @@ export function ProfileSetup() {
                   size="md"
                   onClick={() => {
                     setResumeFile(null);
+                    setResumeParseResult(null);
                     setSetupMode('resume');
                   }}
                   className="flex-1 sm:flex-none justify-center h-11"
