@@ -3,15 +3,21 @@
  * 
  * Pipeline:
  * 1. File Validation (MIME type, size, readability)
- * 2. Multi-Format Text Extraction (PDF, DOCX, DOC, TXT, MD)
- * 3. Resume Document Classifier (rejects certificates, marksheets, invoices, random docs)
+ * 2. Multi-Format Text Extraction (using PDF.js for compressed/flate PDFs, DOCX XML parser, TXT/MD)
+ * 3. Resume Document Classifier (rejects certificates, marksheets, invoices, random docs, accepts genuine resumes)
  * 4. Section-Aware Entity Extraction (Contact, Academics, Skills, Coding handles, Goals)
  * 5. SASTRA Normalization (Department mapping, 9-digit roll number, CGPA normalization)
  * 6. Conflict Detection (Compares extracted data vs existing database profile)
  * 7. Confidence Scoring ('high' | 'medium' | 'low')
  */
 
+import * as pdfjsLib from 'pdfjs-dist';
 import { SASTRA_DEPARTMENTS } from './profileCompletion.js';
+
+// Configure worker for pdfjs-dist
+if (typeof window !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '3.11.174'}/pdf.worker.min.js`;
+}
 
 export const RESUME_REJECTION_MESSAGE =
   'This file does not appear to be a valid student resume. Please upload your resume in PDF or DOC/DOCX format.';
@@ -45,29 +51,46 @@ export function validateResumeFileMetadata(file) {
 }
 
 /**
- * 2. Multi-Format Binary & Text Extraction
+ * PDF Text Extraction using PDF.js (Handles FlateDecode, Compressed Streams, Multi-Column, Fonts)
  */
-export async function extractTextFromFile(file) {
-  if (!file) return '';
+async function extractTextFromPdf(arrayBuffer) {
+  try {
+    const loadingTask = pdfjsLib.getDocument({
+      data: new Uint8Array(arrayBuffer),
+      useSystemFonts: true,
+      disableFontFace: true,
+      stopAtErrors: false,
+    });
+    const pdf = await loadingTask.promise;
+    let fullText = '';
 
-  const fileName = (file.name || '').toLowerCase();
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .map((item) => item.str)
+        .join(' ');
+      fullText += pageText + '\n';
+    }
 
-  // Plain Text / Markdown
-  if (fileName.endsWith('.txt') || fileName.endsWith('.md')) {
-    return await file.text();
+    if (fullText.trim().length >= 20) {
+      return fullText;
+    }
+  } catch (err) {
+    console.warn('PDF.js text extraction error/fallback:', err);
   }
+  return null;
+}
 
-  // Binary extraction for PDF, DOCX, DOC
-  const arrayBuffer = await file.arrayBuffer();
-  const bytes = new Uint8Array(arrayBuffer);
-
-  // Extract readable text chunks from stream
+/**
+ * Fallback Binary String Stream Scanner
+ */
+function extractFallbackAscii(bytes) {
   let rawText = '';
   let currentChunk = '';
 
   for (let i = 0; i < bytes.length; i++) {
     const byte = bytes[i];
-    // Printable ASCII (32-126) + newlines and tabs
     if ((byte >= 32 && byte <= 126) || byte === 10 || byte === 13 || byte === 9) {
       currentChunk += String.fromCharCode(byte);
     } else {
@@ -81,22 +104,44 @@ export async function extractTextFromFile(file) {
     rawText += currentChunk;
   }
 
-  // Clean PDF stream and XML operators
-  let cleaned = rawText
-    // Remove PDF binary objects and stream delimiters
+  return rawText
     .replace(/<<[\s\S]*?>>/g, ' ')
     .replace(/\b(stream|endstream|endobj|obj|xref|trailer|startxref)\b/gi, ' ')
-    // Extract text inside PDF parentheses: (Hello World) Tj
     .replace(/\\([0-9]{3})/g, ' ')
     .replace(/\\([nrtbf()\\])/g, '$1')
-    // Remove XML tags from DOCX
     .replace(/<[^>]+>/g, ' ')
     .replace(/&[a-z]+;/gi, ' ')
     .replace(/[\r\n\t]+/g, ' ')
     .replace(/\s{2,}/g, ' ')
     .trim();
+}
 
-  return cleaned;
+/**
+ * 2. Multi-Format Text Extraction
+ */
+export async function extractTextFromFile(file) {
+  if (!file) return '';
+
+  const fileName = (file.name || '').toLowerCase();
+
+  // Plain Text / Markdown
+  if (fileName.endsWith('.txt') || fileName.endsWith('.md')) {
+    return await file.text();
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+
+  // PDF Document: Use PDF.js first for decompressed text
+  if (fileName.endsWith('.pdf')) {
+    const pdfText = await extractTextFromPdf(arrayBuffer);
+    if (pdfText && pdfText.trim().length >= 30) {
+      return pdfText;
+    }
+  }
+
+  // Binary stream extraction (for DOCX, DOC, or Fallback PDF)
+  const bytes = new Uint8Array(arrayBuffer);
+  return extractFallbackAscii(bytes);
 }
 
 /**
@@ -104,7 +149,7 @@ export async function extractTextFromFile(file) {
  * Determines whether extractable text represents a genuine student resume
  */
 export function classifyResumeDocument(text, fileName = '') {
-  if (!text || typeof text !== 'string' || text.trim().length < 60) {
+  if (!text || typeof text !== 'string' || text.trim().length < 30) {
     return {
       isResume: false,
       reason: RESUME_REJECTION_MESSAGE,
@@ -126,7 +171,7 @@ export function classifyResumeDocument(text, fileName = '') {
     'has participated in',
   ];
   const isCertificate = certificateSignals.some((sig) => lower.includes(sig));
-  if (isCertificate && !lower.includes('projects') && !lower.includes('technical skills')) {
+  if (isCertificate && !lower.includes('education') && !lower.includes('skills') && !lower.includes('projects')) {
     return {
       isResume: false,
       reason: 'The uploaded file appears to be a Certificate, not a student resume. Please upload your resume in PDF or DOC/DOCX format.',
@@ -134,10 +179,8 @@ export function classifyResumeDocument(text, fileName = '') {
   }
 
   const marksheetSignals = [
-    'semester grade report',
     'statement of marks',
     'controller of examinations',
-    'marksheet',
     'tabulation sheet',
     'end semester examination results',
     'grade sheet',
@@ -159,7 +202,7 @@ export function classifyResumeDocument(text, fileName = '') {
     'question paper',
     'user manual',
   ];
-  if (otherNonResumeSignals.some((sig) => lower.includes(sig))) {
+  if (otherNonResumeSignals.some((sig) => lower.includes(sig)) && !lower.includes('education') && !lower.includes('skills')) {
     return {
       isResume: false,
       reason: RESUME_REJECTION_MESSAGE,
@@ -178,6 +221,7 @@ export function classifyResumeDocument(text, fileName = '') {
     lower.includes('bachelor') ||
     lower.includes('university') ||
     lower.includes('institute') ||
+    lower.includes('sastra') ||
     lower.includes('cgpa') ||
     lower.includes('gpa')
   ) {
@@ -192,7 +236,9 @@ export function classifyResumeDocument(text, fileName = '') {
     lower.includes('technologies') ||
     lower.includes('frameworks') ||
     lower.includes('tools') ||
-    lower.includes('technical stack')
+    lower.includes('technical stack') ||
+    lower.includes('core competencies') ||
+    lower.includes('languages')
   ) {
     sectionScore += 1;
     detectedSections.push('Skills');
@@ -203,7 +249,8 @@ export function classifyResumeDocument(text, fileName = '') {
     lower.includes('projects') ||
     lower.includes('key projects') ||
     lower.includes('academic projects') ||
-    lower.includes('personal projects')
+    lower.includes('personal projects') ||
+    lower.includes('project')
   ) {
     sectionScore += 1;
     detectedSections.push('Projects');
@@ -214,7 +261,8 @@ export function classifyResumeDocument(text, fileName = '') {
     lower.includes('experience') ||
     lower.includes('internship') ||
     lower.includes('work experience') ||
-    lower.includes('employment')
+    lower.includes('employment') ||
+    lower.includes('training')
   ) {
     sectionScore += 1;
     detectedSections.push('Experience');
@@ -225,22 +273,32 @@ export function classifyResumeDocument(text, fileName = '') {
     lower.includes('github.com') ||
     lower.includes('linkedin.com') ||
     lower.includes('leetcode.com') ||
+    lower.includes('codeforces') ||
+    lower.includes('codechef') ||
     lower.includes('email') ||
     lower.includes('@sastra.ac.in') ||
-    /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/.test(text)
+    /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/.test(text) ||
+    /\b(12[4-9]\d{6})\b/.test(text)
   ) {
     sectionScore += 1;
     detectedSections.push('Contact / Links');
   }
 
   // 6. Summary / Objective
-  if (lower.includes('objective') || lower.includes('summary') || lower.includes('profile')) {
+  if (lower.includes('objective') || lower.includes('summary') || lower.includes('profile') || lower.includes('about me')) {
     sectionScore += 1;
     detectedSections.push('Summary');
   }
 
-  // Decision: Must have at least 2 distinct resume sections
-  if (sectionScore < 2) {
+  // 7. Common Technical Keywords (Java, Python, C++, React, SQL, etc.)
+  const techKeywords = ['python', 'java', 'c++', 'javascript', 'react', 'node', 'sql', 'html', 'css', 'git', 'docker', 'spring', 'aws', 'data structures', 'algorithms'];
+  const matchedTechCount = techKeywords.filter((k) => lower.includes(k)).length;
+  if (matchedTechCount >= 2) {
+    sectionScore += 1;
+  }
+
+  // Flexible Decision: At least 1 clear resume section or 2 signal points
+  if (sectionScore < 1) {
     return {
       isResume: false,
       reason: RESUME_REJECTION_MESSAGE,
@@ -385,7 +443,6 @@ export function extractStructuredResumeData(text, existingUser = null) {
   const lowerText = cleanText.toLowerCase();
 
   // ── A. Full Name ──
-  // Check first few lines for name candidate
   const lines = cleanText
     .split(/[\n,;|]/)
     .map((l) => l.trim())
@@ -405,8 +462,8 @@ export function extractStructuredResumeData(text, existingUser = null) {
       confidence.fullName = 'high';
     }
   }
-  if (!extracted.fullName && existingUser?.fullName) {
-    extracted.fullName = existingUser.fullName;
+  if (!extracted.fullName && (existingUser?.fullName || existingUser?.name)) {
+    extracted.fullName = existingUser.fullName || existingUser.name;
     confidence.fullName = 'high';
   }
 
@@ -427,7 +484,7 @@ export function extractStructuredResumeData(text, existingUser = null) {
 
   // ── C. SASTRA Roll Number (Strict 9-digit format, e.g. 127XXXXXX) ──
   const rollPatterns = [
-    /\b(12[4-9]\d{6})\b/, // SASTRA batch format (124-129 followed by 6 digits)
+    /\b(12[4-9]\d{6})\b/,
     /\broll(?:\s*no|\s*number)?[:\s-]*([0-9]{9})\b/i,
     /\b(127\d{6})\b/,
     /\b([0-9]{9})\b/,
@@ -438,7 +495,6 @@ export function extractStructuredResumeData(text, existingUser = null) {
     const match = cleanText.match(pattern);
     if (match) {
       const candidate = match[1];
-      // Make sure it's not a phone number (10 digits) or date
       if (candidate.length === 9) {
         detectedRoll = candidate;
         break;
@@ -460,7 +516,6 @@ export function extractStructuredResumeData(text, existingUser = null) {
     extracted.department = detectedDept;
     confidence.department = 'high';
 
-    // Conflict Check against existing verified DB department
     if (
       existingUser?.department &&
       existingUser.department !== 'Select your department' &&
@@ -499,7 +554,7 @@ export function extractStructuredResumeData(text, existingUser = null) {
   // ── F. Graduation Year (2024 to 2030) ──
   const gradYearPatterns = [
     /(?:batch\s*of|graduating\s*in|graduation\s*year|batch)[:\s]*([0-9]{4})/i,
-    /(?:202[0-9]|2030)\s*[-–]\s*(202[4-9]|2030)/i, // e.g. 2022 - 2026
+    /(?:202[0-9]|2030)\s*[-–]\s*(202[4-9]|2030)/i,
     /\b(202[4-9]|2030)\b/,
   ];
   let detectedYear = null;
@@ -685,7 +740,7 @@ export async function parseResumeFile(file, existingUser = null) {
     };
   }
 
-  // 2. Extract raw text
+  // 2. Extract text (using PDF.js or binary stream fallback)
   const text = await extractTextFromFile(file);
 
   // 3. Document classification
