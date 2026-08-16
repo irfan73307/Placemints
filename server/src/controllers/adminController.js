@@ -252,19 +252,28 @@ async function deleteStudent(req, res) {
       return res.status(404).json({ message: 'Student user not found or is an admin account.' });
     }
 
-    // Delete student user from database
+    // Explicitly delete all refresh tokens / active sessions for the student
+    try {
+      await prisma.refreshToken.deleteMany({
+        where: { userId: student.id },
+      });
+    } catch (tokenErr) {
+      console.warn('Could not delete refresh tokens for student:', tokenErr.message);
+    }
+
+    // Delete student user and cascading profiles from database
     await prisma.user.delete({
       where: { id: student.id },
     });
 
     res.json({
       success: true,
-      message: `Student "${student.fullName || student.name || student.email}" removed from database.`,
+      message: 'Student account deleted successfully.',
       deletedId: student.id,
     });
   } catch (err) {
     console.error('Delete student error:', err);
-    res.status(500).json({ message: 'Failed to remove student from database.' });
+    res.status(500).json({ message: 'Unable to delete the student. Please try again.' });
   }
 }
 

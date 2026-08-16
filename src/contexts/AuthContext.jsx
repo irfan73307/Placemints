@@ -15,6 +15,26 @@ export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
 
+  // Core session verification helper
+  const verifySession = async () => {
+    try {
+      const res = await getCurrentUser();
+      if (res && res.user) {
+        setUser(res.user);
+        setIsAuthenticated(true);
+        return true;
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+        return false;
+      }
+    } catch (err) {
+      setUser(null);
+      setIsAuthenticated(false);
+      return false;
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -30,7 +50,6 @@ export function AuthProvider({ children }) {
       }
 
       try {
-        // Fetch verified user from database via HTTP-only cookie or Bearer token
         const res = await getCurrentUser();
         if (isMounted && res && res.user) {
           setUser(res.user);
@@ -53,20 +72,88 @@ export function AuthProvider({ children }) {
 
     initializeSession();
 
-    // Multi-tab logout synchronization listener
+    // Multi-tab sync listener
     const handleStorageChange = (e) => {
-      if (e.key === 'placemints_auth_sync' && e.newValue === 'logout') {
-        setUser(null);
-        setIsAuthenticated(false);
+      if (e.key === 'placemints_auth_sync' && e.newValue) {
+        try {
+          const syncData = JSON.parse(e.newValue);
+          if (syncData.action === 'account_revoked' || syncData.action === 'logout') {
+            setUser(null);
+            setIsAuthenticated(false);
+          }
+        } catch {
+          if (e.newValue === 'logout') {
+            setUser(null);
+            setIsAuthenticated(false);
+          }
+        }
       }
     };
+
+    // Current-tab account revocation custom event
+    const handleAccountRevoked = () => {
+      setUser(null);
+      setIsAuthenticated(false);
+    };
+
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('placemints:account_revoked', handleAccountRevoked);
 
     return () => {
       isMounted = false;
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('placemints:account_revoked', handleAccountRevoked);
     };
   }, []);
+
+  // Periodic heartbeat & tab focus revalidation
+  useEffect(() => {
+    if (!isAuthenticated || isInitializing) return;
+
+    let isSubscribed = true;
+
+    const performCheck = async () => {
+      if (document.hidden) return;
+      try {
+        const res = await getCurrentUser();
+        if (!res || !res.user) {
+          if (isSubscribed) {
+            setUser(null);
+            setIsAuthenticated(false);
+          }
+        }
+      } catch (err) {
+        if (isSubscribed) {
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      }
+    };
+
+    // 1. Check on tab visibility change (e.g. switching back from Admin tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        performCheck();
+      }
+    };
+
+    const handleFocus = () => {
+      performCheck();
+    };
+
+    // 2. Heartbeat interval every 25 seconds while active
+    const heartbeatInterval = setInterval(performCheck, 25000);
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      isSubscribed = false;
+      clearInterval(heartbeatInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [isAuthenticated, isInitializing]);
 
   const login = () => {
     const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
@@ -83,8 +170,10 @@ export function AuthProvider({ children }) {
       // Ignore
     }
     localStorage.removeItem('placemints_auth_token');
-    localStorage.setItem('placemints_auth_sync', 'logout');
-    setTimeout(() => localStorage.removeItem('placemints_auth_sync'), 100);
+    try {
+      localStorage.setItem('placemints_auth_sync', JSON.stringify({ action: 'logout', timestamp: Date.now() }));
+      setTimeout(() => localStorage.removeItem('placemints_auth_sync'), 200);
+    } catch (e) {}
     setUser(null);
     setIsAuthenticated(false);
   };
@@ -108,6 +197,7 @@ export function AuthProvider({ children }) {
         logout,
         setUserData,
         updateUserData,
+        verifySession,
       }}
     >
       {children}

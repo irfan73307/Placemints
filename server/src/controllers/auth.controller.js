@@ -423,32 +423,27 @@ async function resetPassword(req, res) {
 // GET /auth/me
 async function getMe(req, res) {
   try {
-    let user = null;
-    let savedCount = 0;
-
-    try {
-      user = await prisma.user.findUnique({ where: { id: req.user.id } });
-      if (user) {
-        savedCount = await prisma.savedCompany.count({ where: { userId: user.id } });
-      }
-    } catch (dbErr) {
-      console.warn('[getMe DB WARN] Database query failed, using session token data:', dbErr.message);
+    if (!req.user || !req.user.id) {
+      res.clearCookie('accessToken', { path: '/' });
+      res.clearCookie('refreshToken', { path: '/' });
+      return res.status(401).json({
+        code: 'ACCOUNT_REVOKED',
+        message: 'Your account is no longer available. Please contact the administrator if you believe this was a mistake.',
+      });
     }
 
-    if (!user) {
-      const isPrimary = req.user.email === '127015088@sastra.ac.in';
-      user = {
-        id: req.user.id,
-        email: req.user.email,
-        fullName: req.user.name || 'SASTRA Student',
-        name: req.user.name || 'SASTRA Student',
-        branch: 'CSE',
-        batchYear: 2026,
-        role: isPrimary ? 'ADMIN' : (req.user.role || 'STUDENT'),
-        isPrimaryAdmin: isPrimary ? true : (req.user.isPrimaryAdmin || false),
-        profileCompleted: true,
-      };
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+    if (!user || user.isActive === false) {
+      res.clearCookie('accessToken', { path: '/' });
+      res.clearCookie('refreshToken', { path: '/' });
+      return res.status(401).json({
+        code: 'ACCOUNT_REVOKED',
+        message: 'Your account is no longer available. Please contact the administrator if you believe this was a mistake.',
+      });
     }
+
+    const savedCount = await prisma.savedCompany.count({ where: { userId: user.id } });
 
     res.json({
       user: {
@@ -468,12 +463,16 @@ async function refreshToken(req, res) {
   try {
     const token = req.cookies?.refreshToken || req.body?.refreshToken;
     if (!token) {
-      return res.status(401).json({ message: 'Refresh token required.' });
+      res.clearCookie('accessToken', { path: '/' });
+      res.clearCookie('refreshToken', { path: '/' });
+      return res.status(401).json({ code: 'ACCOUNT_REVOKED', message: 'Refresh token required.' });
     }
 
     const decoded = verifyRefreshToken(token);
-    if (!decoded) {
-      return res.status(401).json({ message: 'Invalid refresh token.' });
+    if (!decoded || !decoded.id) {
+      res.clearCookie('accessToken', { path: '/' });
+      res.clearCookie('refreshToken', { path: '/' });
+      return res.status(401).json({ code: 'ACCOUNT_REVOKED', message: 'Invalid or expired refresh token.' });
     }
 
     const savedToken = await prisma.refreshToken.findFirst({
@@ -481,12 +480,31 @@ async function refreshToken(req, res) {
     });
 
     if (!savedToken) {
-      return res.status(401).json({ message: 'Revoked or expired refresh token.' });
+      res.clearCookie('accessToken', { path: '/' });
+      res.clearCookie('refreshToken', { path: '/' });
+      return res.status(401).json({
+        code: 'ACCOUNT_REVOKED',
+        message: 'Revoked or expired refresh token.',
+      });
     }
 
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
+    if (!user || user.isActive === false) {
+      // User has been deleted/deactivated: revoke all tokens and clear cookies
+      try {
+        await prisma.refreshToken.updateMany({
+          where: { userId: decoded.id },
+          data: { revoked: true },
+        });
+      } catch (e) {
+        // Ignore
+      }
+      res.clearCookie('accessToken', { path: '/' });
+      res.clearCookie('refreshToken', { path: '/' });
+      return res.status(401).json({
+        code: 'ACCOUNT_REVOKED',
+        message: 'Your account is no longer available. Please contact the administrator if you believe this was a mistake.',
+      });
     }
 
     const newAccessToken = generateAccessToken(user);
@@ -547,14 +565,14 @@ function formatUserResponse(user) {
     degree: user.degree || 'B.Tech',
     graduationYear: gradYear,
     batchYear: gradYear,
-    section: user.section || 'A',
+    section: user.section || '',
     rollNumber: rawRoll,
     rollNo: rawRoll,
-    cgpa: user.cgpa || '8.50',
-    placementGoal: user.placementGoal || user.targetRole || 'Software Engineer',
-    targetRole: user.placementGoal || user.targetRole || 'Software Engineer',
+    cgpa: user.profileCompleted ? (user.cgpa || '') : (user.cgpa && user.cgpa !== '8.50' && user.cgpa !== '8.5' ? user.cgpa : ''),
+    placementGoal: user.profileCompleted ? (user.placementGoal || user.targetRole || '') : (user.placementGoal && user.placementGoal !== 'Software Engineer (SDE-1)' && user.placementGoal !== 'Software Engineer' ? user.placementGoal : ''),
+    targetRole: user.profileCompleted ? (user.targetRole || user.placementGoal || '') : (user.targetRole && user.targetRole !== 'Software Engineer' ? user.targetRole : ''),
     branch: rawBranch,
-    batch: String(gradYear),
+    batch: String(gradYear || ''),
     interestedRoles: user.interestedRoles ? (Array.isArray(user.interestedRoles) ? user.interestedRoles : user.interestedRoles.split(',').map((s) => s.trim())) : [],
     programmingLanguages: user.programmingLanguages ? (Array.isArray(user.programmingLanguages) ? user.programmingLanguages : user.programmingLanguages.split(',').map((s) => s.trim())) : [],
     frameworks: user.frameworks ? (Array.isArray(user.frameworks) ? user.frameworks : user.frameworks.split(',').map((s) => s.trim())) : [],

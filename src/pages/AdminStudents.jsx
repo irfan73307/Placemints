@@ -98,8 +98,8 @@ export default function AdminStudents() {
     setIsDeleting(true);
     try {
       await apiClient.delete(`/admin/students/${studentToDelete.id}`);
-      toast.success(`Removed "${studentToDelete.name || studentToDelete.email}" from database.`);
-      
+      toast.success('Student account deleted successfully.');
+
       // Close detail drawer if deleting currently viewed student
       if (selectedStudent && selectedStudent.id === studentToDelete.id) {
         setSelectedStudent(null);
@@ -109,7 +109,7 @@ export default function AdminStudents() {
       fetchStudents();
     } catch (err) {
       console.error('Failed to delete student:', err);
-      toast.error(err.response?.data?.message || 'Failed to remove student from database.');
+      toast.error('Unable to delete the student. Please try again.');
     } finally {
       setIsDeleting(false);
     }
@@ -519,16 +519,14 @@ export default function AdminStudents() {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white">Confirm Removal</h3>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white">Delete this student?</h3>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                Are you sure you want to permanently delete student{' '}
-                <strong className="text-slate-900 dark:text-slate-100 font-bold">{studentToDelete.name || studentToDelete.email}</strong>{' '}
-                ({studentToDelete.rollNumber}) from the SASTRA University database?
+                Deleting this account will revoke all active sessions and remove the student's access to Placemints.
               </p>
             </div>
 
             <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-xl text-left text-xs text-red-700 dark:text-red-300 font-medium">
-              ⚠️ Warning: This will delete the student profile, saved target companies, and all associated placement data permanently.
+              Target Student: <strong className="text-slate-900 dark:text-slate-100 font-bold">{studentToDelete.name || studentToDelete.email}</strong> ({studentToDelete.rollNumber || studentToDelete.email})
             </div>
 
             <div className="flex items-center gap-3 pt-2">

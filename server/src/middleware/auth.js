@@ -22,12 +22,32 @@ async function requireAuth(req, res, next) {
   }
 
   const decoded = verifyAccessToken(token);
-  if (!decoded) {
+  if (!decoded || !decoded.id) {
     return res.status(401).json({ message: 'Invalid or expired token.' });
   }
 
-  req.user = decoded;
-  next();
+  try {
+    const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });
+    if (!dbUser || dbUser.isActive === false) {
+      res.clearCookie('accessToken', { path: '/' });
+      res.clearCookie('refreshToken', { path: '/' });
+      return res.status(401).json({
+        code: 'ACCOUNT_REVOKED',
+        message: 'Your account is no longer available. Please contact the administrator if you believe this was a mistake.',
+      });
+    }
+
+    req.user = {
+      ...decoded,
+      ...dbUser,
+      role: (dbUser.role || 'STUDENT').toUpperCase(),
+      isPrimaryAdmin: dbUser.isPrimaryAdmin || false,
+    };
+    next();
+  } catch (err) {
+    console.error('requireAuth database error:', err);
+    return res.status(500).json({ message: 'Authentication check failed.' });
+  }
 }
 
 async function requireAdmin(req, res, next) {
@@ -37,22 +57,36 @@ async function requireAdmin(req, res, next) {
   }
 
   const decoded = verifyAccessToken(token);
-  if (!decoded) {
+  if (!decoded || !decoded.id) {
     return res.status(401).json({ message: 'Invalid or expired token.' });
   }
 
-  // Database-driven role verification
-  const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });
-  if (!dbUser || (dbUser.role || '').toUpperCase() !== 'ADMIN' || dbUser.isActive === false) {
-    return res.status(403).json({ message: 'Access Denied: Admin privileges required.' });
-  }
+  try {
+    const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });
+    if (!dbUser || dbUser.isActive === false) {
+      res.clearCookie('accessToken', { path: '/' });
+      res.clearCookie('refreshToken', { path: '/' });
+      return res.status(401).json({
+        code: 'ACCOUNT_REVOKED',
+        message: 'Your account is no longer available. Please contact the administrator if you believe this was a mistake.',
+      });
+    }
 
-  req.user = {
-    ...decoded,
-    role: dbUser.role,
-    isPrimaryAdmin: dbUser.isPrimaryAdmin,
-  };
-  next();
+    if ((dbUser.role || '').toUpperCase() !== 'ADMIN') {
+      return res.status(403).json({ message: 'Access Denied: Admin privileges required.' });
+    }
+
+    req.user = {
+      ...decoded,
+      ...dbUser,
+      role: dbUser.role,
+      isPrimaryAdmin: dbUser.isPrimaryAdmin,
+    };
+    next();
+  } catch (err) {
+    console.error('requireAdmin database error:', err);
+    return res.status(500).json({ message: 'Admin authentication check failed.' });
+  }
 }
 
 async function requirePrimaryAdmin(req, res, next) {
@@ -62,29 +96,56 @@ async function requirePrimaryAdmin(req, res, next) {
   }
 
   const decoded = verifyAccessToken(token);
-  if (!decoded) {
+  if (!decoded || !decoded.id) {
     return res.status(401).json({ message: 'Invalid or expired token.' });
   }
 
-  const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });
-  if (!dbUser || (dbUser.role || '').toUpperCase() !== 'ADMIN' || !dbUser.isPrimaryAdmin || dbUser.isActive === false) {
-    return res.status(403).json({ message: 'Access Denied: Primary Admin privileges required.' });
-  }
+  try {
+    const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });
+    if (!dbUser || dbUser.isActive === false) {
+      res.clearCookie('accessToken', { path: '/' });
+      res.clearCookie('refreshToken', { path: '/' });
+      return res.status(401).json({
+        code: 'ACCOUNT_REVOKED',
+        message: 'Your account is no longer available. Please contact the administrator if you believe this was a mistake.',
+      });
+    }
 
-  req.user = {
-    ...decoded,
-    role: dbUser.role,
-    isPrimaryAdmin: dbUser.isPrimaryAdmin,
-  };
-  next();
+    if ((dbUser.role || '').toUpperCase() !== 'ADMIN' || !dbUser.isPrimaryAdmin) {
+      return res.status(403).json({ message: 'Access Denied: Primary Admin privileges required.' });
+    }
+
+    req.user = {
+      ...decoded,
+      ...dbUser,
+      role: dbUser.role,
+      isPrimaryAdmin: dbUser.isPrimaryAdmin,
+    };
+    next();
+  } catch (err) {
+    console.error('requirePrimaryAdmin database error:', err);
+    return res.status(500).json({ message: 'Primary Admin authentication check failed.' });
+  }
 }
 
-function optionalAuth(req, res, next) {
+async function optionalAuth(req, res, next) {
   const token = extractToken(req);
   if (token) {
     const decoded = verifyAccessToken(token);
-    if (decoded) {
-      req.user = decoded;
+    if (decoded && decoded.id) {
+      try {
+        const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });
+        if (dbUser && dbUser.isActive !== false) {
+          req.user = {
+            ...decoded,
+            ...dbUser,
+            role: (dbUser.role || 'STUDENT').toUpperCase(),
+            isPrimaryAdmin: dbUser.isPrimaryAdmin || false,
+          };
+        }
+      } catch (err) {
+        // Silently continue for optional auth
+      }
     }
   }
   next();

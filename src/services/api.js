@@ -31,9 +31,40 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor (Handles 401 Token Expiration with Automatic Refresh)
+// Response Interceptor (Handles 401 Token Expiration with Automatic Refresh & Account Revocation)
 let isRefreshing = false;
 let failedQueue = [];
+
+export function handleRevocation(message) {
+  const revocationMessage =
+    message ||
+    'Your account is no longer available. Please contact the administrator if you believe this was a mistake.';
+  localStorage.removeItem('placemints_auth_token');
+  sessionStorage.setItem('placemints_revoked_notice', revocationMessage);
+
+  // Broadcast to other tabs
+  try {
+    localStorage.setItem(
+      'placemints_auth_sync',
+      JSON.stringify({
+        action: 'account_revoked',
+        message: revocationMessage,
+        timestamp: Date.now(),
+      })
+    );
+  } catch (e) {
+    // Ignore storage quota errors
+  }
+
+  // Dispatch event for in-memory context in current tab
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('placemints:account_revoked', {
+        detail: { message: revocationMessage },
+      })
+    );
+  }
+}
 
 const processQueue = (error, token = null) => {
   failedQueue.forEach((prom) => {
@@ -50,15 +81,28 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    const responseCode = error.response?.data?.code;
+    const responseStatus = error.response?.status;
+    const responseMessage = error.response?.data?.message;
+
+    // 1. Direct account deletion / revocation detection
+    if (responseCode === 'ACCOUNT_REVOKED') {
+      handleRevocation(responseMessage);
+      return Promise.reject(error);
+    }
 
     // Avoid infinite loop on auth endpoints
     const isAuthEndpoint =
-      originalRequest.url.includes('/auth/login') ||
-      originalRequest.url.includes('/auth/register') ||
-      originalRequest.url.includes('/auth/refresh') ||
-      originalRequest.url.includes('/auth/logout');
+      originalRequest.url?.includes('/auth/login') ||
+      originalRequest.url?.includes('/auth/register') ||
+      originalRequest.url?.includes('/auth/refresh') ||
+      originalRequest.url?.includes('/auth/logout');
 
-    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
+    if (responseStatus === 401 && !originalRequest._retry && !isAuthEndpoint) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -91,11 +135,18 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest);
         } else {
           processQueue(new Error('No token returned from refresh'));
+          handleRevocation(responseMessage);
           return Promise.reject(error);
         }
       } catch (refreshErr) {
         processQueue(refreshErr, null);
-        localStorage.removeItem('placemints_auth_token');
+        const refreshCode = refreshErr.response?.data?.code;
+        const refreshMsg = refreshErr.response?.data?.message;
+        if (refreshCode === 'ACCOUNT_REVOKED' || refreshErr.response?.status === 401) {
+          handleRevocation(refreshMsg);
+        } else {
+          localStorage.removeItem('placemints_auth_token');
+        }
         return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;

@@ -238,8 +238,8 @@ async function updateProfile(req, res) {
 
     const isPrimary = user.email && user.email.toLowerCase().trim() === '127015088@sastra.ac.in';
     const parsedUserRoll = parseRollNumber(user.email || user.rollNumber || user.rollNo);
-    const rawBranchOut = user.department || user.branch || parsedUserRoll?.branch || 'CSE';
-    const gradYearOut = user.graduationYear || user.batchYear || parsedUserRoll?.graduationYear || 2026;
+    const rawBranchOut = user.department || user.branch || parsedUserRoll?.branch || '';
+    const gradYearOut = user.graduationYear || user.batchYear || parsedUserRoll?.graduationYear || '';
     const rollOut = user.rollNumber || user.rollNo || (user.email ? user.email.split('@')[0] : '');
 
     res.json({
@@ -257,13 +257,13 @@ async function updateProfile(req, res) {
         degree: user.degree || 'B.Tech',
         graduationYear: gradYearOut,
         batchYear: gradYearOut,
-        section: user.section || 'A',
+        section: user.section || '',
         rollNumber: rollOut,
         rollNo: rollOut,
-        cgpa: user.cgpa || '8.50',
-        placementGoal: user.placementGoal || user.targetRole || 'Software Engineer',
-        targetRole: user.placementGoal || user.targetRole || 'Software Engineer',
-        batch: String(gradYearOut),
+        cgpa: user.cgpa || '',
+        placementGoal: user.placementGoal || user.targetRole || '',
+        targetRole: user.placementGoal || user.targetRole || '',
+        batch: String(gradYearOut || ''),
         interestedRoles: user.interestedRoles ? (Array.isArray(user.interestedRoles) ? user.interestedRoles : user.interestedRoles.split(',').map((s) => s.trim())) : [],
         programmingLanguages: user.programmingLanguages ? (Array.isArray(user.programmingLanguages) ? user.programmingLanguages : user.programmingLanguages.split(',').map((s) => s.trim())) : [],
         frameworks: user.frameworks ? (Array.isArray(user.frameworks) ? user.frameworks : user.frameworks.split(',').map((s) => s.trim())) : [],

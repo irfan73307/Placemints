@@ -13,8 +13,8 @@ const ThemeContext = createContext(null);
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('placemints_theme');
-    if (saved) return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    if (saved === 'dark' || saved === 'light') return saved;
+    return 'light';
   });
 
   useEffect(() => {

@@ -1,10 +1,11 @@
 /**
  * Login Page Component
  * 
- * Student authentication login page.
+ * Standardized Student Authentication Login Page.
  * Offers dual authentication options:
  * 1. "Continue with Google" (backend verified @sastra.ac.in restriction)
- * 2. "Login with Email & Password" (with Show/Hide Password toggle)
+ * 2. "Sign In with Email & Password" (with Show/Hide Password toggle)
+ * Automatically detects and displays account revocation notice if redirected following admin deletion.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -16,7 +17,6 @@ import { useToast } from '../contexts/ToastContext';
 import { loginWithEmail } from '../services/authService';
 import { ROUTES } from '../constants/routes';
 import { AlertCircle, Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react';
-
 import { validateSastraEmail } from '../utils/validation';
 
 export function Login() {
@@ -32,19 +32,26 @@ export function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // 1. Check for account revocation notice from session storage
+    const revokedNotice = sessionStorage.getItem('placemints_revoked_notice');
+    if (revokedNotice) {
+      setErrorMessage(revokedNotice);
+      sessionStorage.removeItem('placemints_revoked_notice');
+      return;
+    }
+
+    // 2. Check query params from Google OAuth callback
     const errorParam = searchParams.get('error');
     if (errorParam === 'domain_restricted') {
       const msg = 'Only SASTRA University students (@sastra.ac.in) can access Placemints.';
       setErrorMessage(msg);
-      toast.error(msg);
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (errorParam) {
       const msg = 'Google authentication failed. Please try again.';
       setErrorMessage(msg);
-      toast.error(msg);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [searchParams, toast]);
+  }, [searchParams]);
 
   const handleGoogleLogin = () => {
     const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
@@ -90,16 +97,16 @@ export function Login() {
   return (
     <div className="space-y-6">
       <div className="space-y-1.5 text-center">
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Student Sign In</h2>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Student Sign In</h2>
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Access SASTRA University company selection rounds & PYQ database.
         </p>
       </div>
 
       {errorMessage && (
-        <div className="p-3.5 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/60 rounded-xl text-xs font-semibold text-red-700 dark:text-red-300 flex items-start gap-2 animate-fadeIn">
+        <div className="p-3.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-xl text-xs font-semibold text-red-700 dark:text-red-300 flex items-start gap-2.5 animate-fadeIn">
           <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-          <span>{errorMessage}</span>
+          <span className="leading-relaxed">{errorMessage}</span>
         </div>
       )}
 
@@ -110,9 +117,9 @@ export function Login() {
           variant="secondary"
           size="lg"
           onClick={handleGoogleLogin}
-          className="w-full flex items-center justify-center gap-3 py-3 border-slate-300 dark:border-slate-700 hover:border-slate-400 bg-white dark:bg-slate-800 font-semibold text-slate-700 dark:text-slate-200 shadow-card hover:shadow-md transition-all"
+          className="w-full flex items-center justify-center gap-3 h-11 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800/80 font-semibold text-slate-700 dark:text-slate-200 shadow-subtle hover:shadow-card transition-all"
         >
-          <svg className="w-5 h-5" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
             <path
               fill="#4285F4"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -150,12 +157,13 @@ export function Login() {
           placeholder="127XXXXXX@sastra.ac.in"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          leftIcon={<Mail className="w-4 h-4" />}
           required
         />
 
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-slate-800 dark:text-slate-200 select-none">Password *</label>
+            <span />
             <Link
               to={ROUTES.FORGOT_PASSWORD}
               className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300"
@@ -164,24 +172,25 @@ export function Login() {
             </Link>
           </div>
 
-          <div className="relative flex items-center">
-            <Input
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              inputClassName="pr-10"
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none"
-              title={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
+          <Input
+            label="Password *"
+            type={showPassword ? 'text' : 'password'}
+            placeholder="Your password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            leftIcon={<Lock className="w-4 h-4" />}
+            rightElement={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none"
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            }
+            required
+          />
         </div>
 
         <Button
@@ -189,7 +198,7 @@ export function Login() {
           variant="primary"
           size="lg"
           isLoading={isSubmitting}
-          className="w-full justify-center gap-2 py-3 shadow-card"
+          className="w-full justify-center gap-2 h-11 shadow-card"
         >
           <span>Sign In with Email</span>
           <ArrowRight className="w-4 h-4" />
